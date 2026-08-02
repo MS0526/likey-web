@@ -1,18 +1,34 @@
-import { Heart, ShoppingBag } from 'lucide-react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import DevNav from './components/DevNav';
 
-export default function App() {
+import HomePage from './pages/HomePage';
+import AboutPage from './pages/AboutPage';
+import AuthSelectPage from './pages/AuthSelectPage';
+import LoginPage from './pages/LoginPage';
+import MarketPage from './pages/MarketPage';
+import DetailPage from './pages/DetailPage';
+import CartPage from './pages/CartPage';
+import FeedPage from './pages/FeedPage';
+import OrgPage from './pages/OrgPage';
+
+function App() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900 text-white p-4">
-      <div className="flex items-center gap-2 mb-4 text-pink-500">
-        <Heart className="w-10 h-10 fill-current animate-pulse" />
-        <ShoppingBag className="w-10 h-10 text-blue-400" />
-      </div>
-      <h1 className="text-3xl font-bold text-center mb-2">
-        라이키(Likey) 세팅 완료! 🚀
-      </h1>
-      <p className="text-slate-400 text-center">
-        Tailwind CSS v4 + React Router + Lucide Icons 적용됨
-      </p>
-    </div>
+    <BrowserRouter>
+      <DevNav />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/auth" element={<AuthSelectPage />} />
+        <Route path="/login/:role" element={<LoginPage />} />
+        <Route path="/market" element={<MarketPage />} />
+        <Route path="/items/:id" element={<DetailPage />} />
+        <Route path="/cart" element={<CartPage />} />
+        <Route path="/feed" element={<FeedPage />} />
+        <Route path="/org" element={<OrgPage />} />
+        <Route path="*" element={<div className="p-8">페이지를 찾을 수 없습니다</div>} />
+      </Routes>
+    </BrowserRouter>
   );
 }
+
+export default App;
