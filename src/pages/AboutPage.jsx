@@ -1,5 +1,5 @@
-// src/pages/HomePage.jsx
-export default function HomePage() {
+// src/pages/AboutPage.jsx.jsx
+export default function AboutPage() {
   return (
     <div className="p-8">
       <h1 className="text-2xl font-bold">사이트 소개</h1>

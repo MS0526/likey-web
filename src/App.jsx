@@ -9,7 +9,7 @@ import MarketPage from './pages/MarketPage';
 import DetailPage from './pages/DetailPage';
 import CartPage from './pages/CartPage';
 import FeedPage from './pages/FeedPage';
-import OrgPage from './pages/OrgPage';
+import OrgPage from './pages/OrgPage'; 
 
 function App() {
   return (
