@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
+import itemRouter from './routes/itemRoutes'; // 👈 1. 라우터 파일 import 추가
 
 const app = express();
 const PORT = 5000;
@@ -26,7 +27,10 @@ app.get('/api/test', (req: Request, res: Response) => {
   });
 });
 
-// 5. 서버 실행
+// 👇 5. 마켓/기관/요청 관련 API 라우터 연결 (이 부분이 핵심!)
+app.use('/api', itemRouter);
+
+// 6. 서버 실행
 app.listen(PORT, () => {
   console.log(`🚀 백엔드 서버가 running 중: http://localhost:${PORT}`);
 });
