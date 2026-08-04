@@ -9,7 +9,7 @@ const links = [
   { to: '/items/1', label: '물품상세' },
   { to: '/cart', label: '장바구니' },
   { to: '/feed', label: '후기' },
-  { to: '/org', label: '기관' },
+  { to: '/org', label: '기관들' },
 ];
 
 export default function DevNav() {
