@@ -1,16 +1,47 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import axios from 'axios';
 import Header from '../components/Header';
 import CategoryNav from '../components/CategoryNav';
 import UrgentBanner from '../components/UrgentBanner';
 import ItemCard from '../components/ItemCard';
-import { items } from '../data/items';
-import { organizations } from '../data/organizations';
-import { requests, getRequestsByItem } from '../data/requests';
 import { progressOfAll } from '../utils/urgency';
 
 export default function MarketPage() {
   const [category, setCategory] = useState('all');
   const [query, setQuery] = useState('');
+
+  // API 데이터 상태
+  const [items, setItems] = useState([]);
+  const [organizations, setOrganizations] = useState([]);
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // 백엔드 API에서 데이터 불러오기
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [itemsRes, orgsRes, reqsRes] = await Promise.all([
+          axios.get('http://localhost:5000/api/items'),
+          axios.get('http://localhost:5000/api/organizations'),
+          axios.get('http://localhost:5000/api/requests'),
+        ]);
+
+        if (itemsRes.data.success) setItems(itemsRes.data.data);
+        if (orgsRes.data.success) setOrganizations(orgsRes.data.data);
+        if (reqsRes.data.success) setRequests(reqsRes.data.data);
+      } catch (error) {
+        console.error('API 데이터를 불러오는 중 오류가 발생했습니다:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // 특정 물품 ID에 해당하는 요청 목록 필터링 헬퍼
+  const getRequestsByItem = (itemId) => requests.filter((r) => r.itemId === itemId);
 
   const needCount = requests
     .filter((r) => r.status === 'open')
@@ -21,7 +52,7 @@ export default function MarketPage() {
       items
         .filter((i) => (category === 'all' ? true : i.category === category))
         .filter((i) => (query ? i.name.includes(query) : true)),
-    [category, query]
+    [items, category, query]
   );
 
   const urgent = useMemo(
@@ -30,8 +61,16 @@ export default function MarketPage() {
         .map((item) => ({ item, percent: progressOfAll(getRequestsByItem(item.id)) }))
         .filter((r) => r.percent < 40)
         .slice(0, 4),
-    []
+    [items, requests]
   );
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-cream text-subtle text-sm">
+        데이터를 불러오는 중입니다...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-cream">
