@@ -160,27 +160,60 @@ git push origin feature/내브랜치이름
 
 ```text
 likey-web/
-├── client/                     # 🎨 프론트엔드 웹 화면 (React + Vite)
+├── client/                          # 🎨 프론트엔드 (React + Vite)
+│   ├── public/
+│   │   ├── favicon.svg
+│   │   └── icons.svg
 │   ├── src/
-│   │   ├── components/         # 공통 및 재사용 UI 컴포넌트
-│   │   │   ├── Header.jsx      # 상단 로고 및 검색바
-│   │   │   ├── ItemCard.jsx    # 물품 정보 카드
-│   │   │   ├── DonationModal.jsx # 후원 결제 모달
-│   │   │   └── Footer.jsx      # 하단 푸터
-│   │   ├── pages/              # 주요 화면 페이지 컴포넌트
-│   │   │   ├── HomePage.jsx    # 메인 마켓 리스트 (/)
-│   │   │   ├── DetailPage.jsx  # 물품 상세 사연 페이지 (/items/:id)
-│   │   │   ├── CartPage.jsx    # 장바구니 페이지 (/cart)
-│   │   │   └── FeedPage.jsx    # 수혜자 감사 인증샷 피드 (/feed)
-│   │   ├── App.jsx             # 라우팅 및 Layout 설정
-│   │   ├── index.css           # Tailwind CSS 설정
-│   │   └── main.jsx            # React 진입점
+│   │   ├── assets/
+│   │   ├── components/              # 공통·재사용 UI 컴포넌트
+│   │   │   ├── Header.jsx           # 상단 헤더
+│   │   │   ├── CategoryNav.jsx      # 카테고리 내비게이션
+│   │   │   ├── UrgentBanner.jsx     # 긴급 후원 배너
+│   │   │   ├── ItemCard.jsx         # 물품 카드
+│   │   │   ├── OrgCard.jsx          # 기관 카드
+│   │   │   ├── ProgressBar.jsx      # 후원 진행률 바
+│   │   │   ├── DevNav.jsx           # 개발용 임시 내비게이션
+│   │   │   ├── OrgHeader.jsx        # 기관 대시보드 헤더
+│   │   │   ├── MetricCard.jsx       # 대시보드 지표 카드
+│   │   │   ├── TabNav.jsx           # 대시보드 탭 내비게이션
+│   │   │   ├── RequestRow.jsx       # 물품 요청 목록 행
+│   │   │   ├── ApprovalRow.jsx      # 후원 승인 목록 행
+│   │   │   └── UsageTable.jsx       # 수령·사용 현황 테이블
+│   │   ├── pages/                   # 주요 화면 (라우팅 단위)
+│   │   │   ├── HomePage.jsx         # 지도 기반 기관 메인 화면
+│   │   │   ├── AboutPage.jsx        # 서비스 소개
+│   │   │   ├── AuthSelectPage.jsx   # 기관/개인·기업 로그인 선택
+│   │   │   ├── LoginPage.jsx        # 로그인
+│   │   │   ├── MarketPage.jsx       # 카테고리별 마켓 리스트
+│   │   │   ├── DetailPage.jsx       # 물품 상세
+│   │   │   ├── CartPage.jsx         # 장바구니
+│   │   │   ├── FeedPage.jsx         # 후원 피드
+│   │   │   └── OrgPage.jsx          # 기관 대시보드(요청등록·승인·현황관리)
+│   │   ├── data/                    # 목데이터 (API 연동 전)
+│   │   │   ├── items.js
+│   │   │   ├── organizations.jsx
+│   │   │   ├── requests.js
+│   │   │   └── donations.js
+│   │   ├── utils/
+│   │   │   └── urgency.js           # 긴급도 판단 로직
+│   │   ├── App.jsx                  # 라우팅·레이아웃
+│   │   ├── App.css
+│   │   ├── index.css                # Tailwind 설정
+│   │   └── main.jsx                 # React 진입점
+│   ├── index.html
 │   ├── package.json
+│   ├── package-lock.json
 │   └── vite.config.js
 │
-└── server/                     # ⚙️ 백엔드 서버 (Node.js + Express + TypeScript)
-    ├── src/
-    │   └── index.ts            # 백엔드 서버 진입점
-    ├── package.json
-    └── tsconfig.json
+├── server/                          # ⚙️ 백엔드 (TypeScript, 민성님)
+│   ├── src/
+│   │   └── index.ts                 # 서버 진입점
+│   ├── package.json
+│   ├── package-lock.json
+│   └── tsconfig.json
+│
+├── .gitignore
+├── .oxlintrc.json                   # oxlint 린터 설정
+└── README.md
 ```
