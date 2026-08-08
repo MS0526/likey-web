@@ -2,13 +2,15 @@ import { Link } from 'react-router-dom';
 import { MapPin, Image as ImageIcon } from 'lucide-react';
 import ProgressBar from './ProgressBar';
 import { getCategoryLabel } from '../data/items';
-import { getRequestsByItem } from '../data/requests';
+import { useDonation } from '../contexts/DonationContext';
 import { progressOfAll, urgencyOf, URGENCY_STYLE, formatWon } from '../utils/urgency';
 
 export default function ItemCard({ item }) {
+  const { getRequestsByItem } = useDonation();
   const reqs = getRequestsByItem(item.id);
   const percent = progressOfAll(reqs);
   const urgency = urgencyOf(percent);
+  const pendingQty = reqs.reduce((s, r) => s + r.pendingQty, 0);
 
   return (
     <Link
@@ -30,6 +32,9 @@ export default function ItemCard({ item }) {
         <div className="mt-3">
           <ProgressBar percent={percent} complete={percent >= 100} />
         </div>
+        {pendingQty > 0 && (
+          <p className="mt-1 text-[11px] text-subtle">수락 대기 {pendingQty}개</p>
+        )}
         <div className="mt-2 flex items-center justify-between text-xs text-subtle">
           <span>{percent}% 달성</span>
           <span className="flex items-center gap-1">

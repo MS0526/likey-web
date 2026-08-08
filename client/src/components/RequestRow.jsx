@@ -6,7 +6,7 @@ export default function RequestRow({ request }) {
   const item = getItemById(request.itemId);
   const percent = progressOf(request);
   const urgency = urgencyOf(percent);
-  const remain = Math.max(0, request.neededQty - request.receivedQty);
+  const remain = Math.max(0, request.neededQty - request.receivedQty - (request.pendingQty ?? 0));
 
   return (
     <div className="rounded-xl border border-hairline bg-white px-5 py-4">
@@ -23,6 +23,9 @@ export default function RequestRow({ request }) {
       </div>
 
       <div className="mt-3"><ProgressBar percent={percent} complete={percent >= 100} /></div>
+      {request.pendingQty > 0 && (
+        <p className="mt-1 text-[11px] text-subtle">수락 대기 {request.pendingQty}개</p>
+      )}
       <p className="mt-2 text-xs text-subtle">
         받은 수량 {request.receivedQty}개 · 남은 요청 {remain}개
       </p>

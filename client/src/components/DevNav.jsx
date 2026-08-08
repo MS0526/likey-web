@@ -6,7 +6,6 @@ const links = [
   { to: '/auth', label: '유형선택' },
   { to: '/login/user', label: '로그인' },
   { to: '/market', label: '마켓' },
-  { to: '/items/1', label: '물품상세' },
   { to: '/cart', label: '장바구니' },
   { to: '/feed', label: '후기' },
   { to: '/org', label: '기관들' },
