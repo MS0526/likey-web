@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { Heart, ChevronRight, ArrowDown } from 'lucide-react';
+import KoreaMap from '../components/KoreaMap';
+import { organizations, getRegionCounts } from '../data/organizations';
+import { useDonation } from '../contexts/DonationContext';
+import HowItWorks from '../components/HowItWorks';
+import AiDemo from '../components/AiDemo';
+import StatBar from '../components/StarBar';
 
 export default function HomePage() {
+  const { requests } = useDonation();
   const [serverMessage, setServerMessage] = useState('백엔드 연결 확인 중...');
 
   useEffect(() => {
@@ -16,16 +25,82 @@ export default function HomePage() {
       });
   }, []);
 
-  return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold">첫 화면</h1>
-      <p className="mt-2 text-gray-500">대한민국 전도 + 배너 + 후원하러 가기 버튼</p>
+  const needCount = requests
+    .filter((r) => r.status === 'open')
+    .reduce((s, r) => s + Math.max(0, r.neededQty - r.receivedQty), 0);
 
-      {/* 🚀 백엔드 연결 상태 확인용 박스 (확인 후 나중에 삭제하셔도 됩니다) */}
-      <div className="mt-6 p-4 bg-gray-100 rounded-lg border border-gray-200">
-        <span className="text-sm font-semibold text-gray-600 block">백엔드 서버 통신 상태:</span>
-        <span className="text-base font-bold text-blue-600 mt-1 block">{serverMessage}</span>
-      </div>
+  return (
+    <div>
+      {/* 🚀 백엔드 연결 상태 확인용 띠 (확인 후 나중에 삭제하셔도 됩니다) */}
+      {import.meta.env.DEV && (
+        <div className="flex items-center justify-center gap-2 bg-gray-900 px-4 py-1 text-xs text-gray-300">
+          <span className="font-semibold text-gray-500">백엔드</span>
+          <span>{serverMessage}</span>
+        </div>
+      )}
+
+      {/* ── 히어로 ── */}
+      <section className="min-h-screen bg-night">
+        <div className="flex items-center justify-between px-8 py-5">
+          <div className="flex items-center gap-2">
+            <Heart size={20} className="fill-accent text-accent" />
+            <span className="text-base text-cream">라이키</span>
+          </div>
+          <a href="#how-it-works" className="flex items-center gap-1 text-sm text-subtle">
+            서비스 소개 <ArrowDown size={14} />
+          </a>
+        </div>
+
+        <div className="grid items-center gap-8 px-8 pb-16 pt-6 md:grid-cols-2">
+          <div>
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+              <span className="text-xs text-cream">
+                지금 전국 {organizations.length}개 기관이 도움을 기다립니다
+              </span>
+            </div>
+
+            <h1 className="text-4xl leading-tight text-cream">
+              직접 전하는
+              <br />
+              <span className="text-accent">진심 어린</span>
+              <br />
+              후원
+            </h1>
+
+            <p className="mt-6 text-sm leading-relaxed text-subtle">
+              전국 {organizations.length}개의 기관이
+              <br />
+              <strong className="text-cream">{needCount}개의 물품</strong>을 필요로 합니다.
+              <br />
+              마켓에서 물건을 고르면 기관으로 바로 배송됩니다.
+            </p>
+
+            <Link
+              to="/auth"
+              className="mt-8 inline-flex items-center gap-3 rounded-full bg-accent px-7 py-3.5 text-sm text-ink"
+            >
+              <Heart size={16} className="fill-ink" />
+              후원하러 가기
+              <ChevronRight size={16} />
+            </Link>
+          </div>
+
+          <div className="flex justify-center">
+            <div className="w-full max-w-xs">
+              <KoreaMap
+                markers={organizations}
+                regionCounts={getRegionCounts()}
+                theme="dark"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+       <HowItWorks />
+      <AiDemo />
+      <StatBar />
     </div>
   );
 }

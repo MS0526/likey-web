@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import DevNav from './components/DevNav';
+import ProtectedRoute from './components/ProtectedRoute';
+import { AuthProvider } from './contexts/AuthContext';
 import { DonationProvider } from './contexts/DonationContext';
 import { CartProvider } from './contexts/CartContext';
 
@@ -16,23 +18,53 @@ import OrgPage from './pages/OrgPage';
 function App() {
   return (
     <BrowserRouter>
-      <DonationProvider>
-        <CartProvider>
-          <DevNav />
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/auth" element={<AuthSelectPage />} />
-            <Route path="/login/:role" element={<LoginPage />} />
-            <Route path="/market" element={<MarketPage />} />
-            <Route path="/items/:id" element={<DetailPage />} />
-            <Route path="/cart" element={<CartPage />} />
-            <Route path="/feed" element={<FeedPage />} />
-            <Route path="/org" element={<OrgPage />} />
-            <Route path="*" element={<div className="p-8">페이지를 찾을 수 없습니다</div>} />
-          </Routes>
-        </CartProvider>
-      </DonationProvider>
+      <AuthProvider>
+        <DonationProvider>
+          <CartProvider>
+            {import.meta.env.DEV && <DevNav />}
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/auth" element={<AuthSelectPage />} />
+              <Route path="/login/:role" element={<LoginPage />} />
+              <Route
+                path="/market"
+                element={
+                  <ProtectedRoute allow={['user', 'guest']}>
+                    <MarketPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/items/:id"
+                element={
+                  <ProtectedRoute allow={['user', 'guest']}>
+                    <DetailPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/cart"
+                element={
+                  <ProtectedRoute allow={['user', 'guest']}>
+                    <CartPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/feed" element={<FeedPage />} />
+              <Route
+                path="/org"
+                element={
+                  <ProtectedRoute allow={['org']}>
+                    <OrgPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<div className="p-8">페이지를 찾을 수 없습니다</div>} />
+            </Routes>
+          </CartProvider>
+        </DonationProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }
