@@ -3,6 +3,7 @@ import Header from '../components/Header';
 import CategoryNav from '../components/CategoryNav';
 import UrgentBanner from '../components/UrgentBanner';
 import ItemCard from '../components/ItemCard';
+import AiChatbot from '../components/AiChatbot';
 import { items } from '../data/items';
 import { organizations } from '../data/organizations';
 import { useDonation } from '../contexts/DonationContext';
@@ -65,6 +66,8 @@ export default function MarketPage() {
           </p>
         )}
       </div>
+
+      <AiChatbot />
     </div>
   );
 }
