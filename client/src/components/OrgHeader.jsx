@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Heart } from 'lucide-react';
+import { ArrowLeft, Heart, LogOut } from 'lucide-react';
+import { useLogout } from '../contexts/AuthContext';
 
 export default function OrgHeader({ organization }) {
   const initial = organization.name.charAt(0);
+  const handleLogout = useLogout();
 
   return (
     <header className="flex items-center justify-between bg-white px-6 py-3">
@@ -16,11 +18,21 @@ export default function OrgHeader({ organization }) {
         </Link>
       </div>
 
-      <div className="flex items-center gap-2.5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-xs text-white">
-          {initial}
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-xs text-white">
+            {initial}
+          </div>
+          <span className="text-sm text-ink">{organization.name}</span>
         </div>
-        <span className="text-sm text-ink">{organization.name}</span>
+
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-1 whitespace-nowrap text-sm text-subtle transition hover:text-ink"
+        >
+          <LogOut size={14} />
+          로그아웃
+        </button>
       </div>
     </header>
   );
