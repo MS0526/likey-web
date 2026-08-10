@@ -4,12 +4,15 @@ import { Sparkles, Package } from 'lucide-react';
 import { items } from '../data/items';
 import { getOrganizationById } from '../data/organizations';
 import { useDonation } from '../contexts/DonationContext';
+import { useAuth } from '../contexts/AuthContext';
 import { progressOf, formatWon } from '../utils/urgency';
 
 const BUDGETS = [20000, 30000, 50000];
 
 export default function AiDemo() {
   const { requests } = useDonation();
+  const { user, homePath } = useAuth();
+  const { role } = user;
   const [budget, setBudget] = useState(30000);
 
   // TODO: 백엔드 연결 시 POST /api/ai/recommend 응답으로 교체
@@ -101,7 +104,7 @@ export default function AiDemo() {
               {result.picks.map((p) => (
                 <Link
                   key={p.req.id}
-                  to={`/auth?next=/items/${p.item.id}`}
+                  to={role ? `/items/${p.item.id}` : `/auth?next=/items/${p.item.id}`}
                   className="flex items-center gap-3 rounded-xl bg-white p-3 transition hover:ring-1 hover:ring-brand"
                 >
                   <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-brand-soft">
@@ -143,7 +146,11 @@ export default function AiDemo() {
 
       <div className="mt-8 text-center">
         <Link
-          to={result ? `/auth?next=/items/${result.picks[0].item.id}` : '/auth'}
+          to={
+            result
+              ? (role ? `/items/${result.picks[0].item.id}` : `/auth?next=/items/${result.picks[0].item.id}`)
+              : homePath
+          }
           className="inline-block rounded-full bg-accent px-8 py-3.5 text-sm text-ink"
         >
           이대로 후원 시작하기

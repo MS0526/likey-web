@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import {
   ArrowLeft, Heart, Shield, Sparkles, Store, Camera, Repeat, CreditCard, Check,
 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const NOW = [
   { Icon: Shield, title: '기관 수락 게이트',
@@ -26,6 +27,8 @@ const NEXT = [
 ];
 
 export default function AboutPage() {
+  const { homePath } = useAuth();
+
   return (
     <div className="min-h-screen bg-cream">
       <header className="flex items-center justify-between bg-white px-6 py-3">
@@ -100,7 +103,7 @@ export default function AboutPage() {
       <section className="px-6 py-16 text-center">
         <p className="text-lg text-ink">지금 바로 시작해 보세요</p>
         <Link
-          to="/auth"
+          to={homePath}
           className="mt-6 inline-block rounded-full bg-brand px-8 py-3.5 text-sm text-white"
         >
           후원하러 가기

@@ -1,11 +1,12 @@
 // src/pages/LoginPage.jsx
 import { useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 
 const isSafeNext = (path) => typeof path === 'string' && path.startsWith('/') && !path.startsWith('//');
 
-// 백엔드 /api/login 연동 전까지 사용하는 임시 계정. 실제 연동 시 이 상수와 아래 검증 분기를 제거할 것.
+// 개발용 테스트 계정 안내 (서버 계정과 동일)
 const TEST_ACCOUNTS = {
   user: { label: '개인 회원', email: 'user@likey.com', password: 'user1234' },
   org: { label: '기관 회원', email: 'org@likey.com', password: 'org1234' },
@@ -25,7 +26,7 @@ export default function LoginPage() {
   const rawNext = searchParams.get('next');
   const next = isSafeNext(rawNext) ? rawNext : null;
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (!email || !password) {
@@ -33,15 +34,30 @@ export default function LoginPage() {
       return;
     }
 
-    // TODO: POST http://localhost:5000/api/login 연동 (email, password 전송 → { success, data: { id, role, email, name }, token } 응답)
-    // 성공 시 로컬 검증 대신 서버 응답의 data.role로 login()을 호출하고, token은 저장(localStorage 등) 후 이후 요청에 Authorization: Bearer 헤더로 사용
-    if (!testAccount || testAccount.email !== email || testAccount.password !== password) {
-      setError('이메일 또는 비밀번호가 올바르지 않습니다');
-      return;
-    }
+    try {
+      const res = await api.post('/api/login', { email, password });
 
-    login(role);
-    navigate(isOrg ? '/org' : (next ?? '/market'));
+      if (!res.data.success) {
+        setError(res.data.message);
+        return;
+      }
+
+      const { role: serverRole } = res.data.data;
+      if (serverRole !== role) {
+        setError('해당 회원 유형의 계정이 아닙니다');
+        return;
+      }
+
+      localStorage.setItem('likeyToken', res.data.token);
+      login(serverRole);
+      navigate(serverRole === 'org' ? '/org' : (next ?? '/market'));
+    } catch (err) {
+      if (err.response) {
+        setError(err.response.data.message);
+      } else {
+        setError('서버에 연결할 수 없습니다');
+      }
+    }
   };
 
   const handleGuest = () => {
