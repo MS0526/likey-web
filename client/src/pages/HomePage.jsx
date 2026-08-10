@@ -1,21 +1,23 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import { api } from '../lib/api';
 import { Heart, ChevronRight, ArrowDown } from 'lucide-react';
 import KoreaMap from '../components/KoreaMap';
 import { organizations, getRegionCounts } from '../data/organizations';
 import { useDonation } from '../contexts/DonationContext';
+import { useAuth } from '../contexts/AuthContext';
 import HowItWorks from '../components/HowItWorks';
 import AiDemo from '../components/AiDemo';
 import StatBar from '../components/StarBar';
 
 export default function HomePage() {
   const { requests } = useDonation();
+  const { homePath } = useAuth();
   const [serverMessage, setServerMessage] = useState('백엔드 연결 확인 중...');
 
   useEffect(() => {
     // 백엔드 API 연결 테스트
-    axios.get('http://localhost:5000/api/test')
+    api.get('/api/test')
       .then((res) => {
         setServerMessage(res.data.message);
       })
@@ -77,7 +79,7 @@ export default function HomePage() {
             </p>
 
             <Link
-              to="/auth"
+              to={homePath}
               className="mt-8 inline-flex items-center gap-3 rounded-full bg-accent px-7 py-3.5 text-sm text-ink"
             >
               <Heart size={16} className="fill-ink" />

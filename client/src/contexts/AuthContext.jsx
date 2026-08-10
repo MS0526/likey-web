@@ -1,14 +1,46 @@
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { api } from '../lib/api';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [role, setRole] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const login = (role) => setRole(role);
-  const logout = () => setRole(null);
+  const logout = () => {
+    localStorage.removeItem('likeyToken');
+    setRole(null);
+  };
 
-  const value = useMemo(() => ({ user: { role }, login, logout }), [role]);
+  useEffect(() => {
+    const token = localStorage.getItem('likeyToken');
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    api
+      .get('/api/me', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => {
+        login(res.data.data.role);
+      })
+      .catch(() => {
+        localStorage.removeItem('likeyToken');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  const homePath = role === 'org' ? '/org' : role === 'user' || role === 'guest' ? '/market' : '/auth';
+
+  const value = useMemo(
+    () => ({ user: { role }, loading, homePath, login, logout }),
+    [role, loading, homePath],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
