@@ -18,3 +18,7 @@
   --color-alert: #C4553D;
   --color-alert-soft: #FBEAE6;
 }
+
+html {
+  scroll-behavior: smooth;
+}
