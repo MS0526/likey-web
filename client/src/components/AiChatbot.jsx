@@ -10,8 +10,19 @@ import RecommendCard from './RecommendCard';
 
 const QUICK = [10000, 30000, 50000, 100000];
 
+const SAMPLE_QUESTIONS = [
+  '7살 아이들에게 좋을 만한 게 뭐야?',
+  '초등학생 학용품 추천해줘',
+  '지금 가장 도움이 필요한 기관은 어디야?',
+  '3만원으로 겨울에 필요한 거',
+  '아이들 한 끼 챙겨주려면 뭐가 좋을까?',
+  '요즘 감기 유행인데 필요한 게 있을까?',
+];
+
+const GREETING = '안녕하세요! 후원도우미예요.\n금액이나 궁금한 점을 물어보시면 지금 가장 필요한 물품을 찾아드릴게요.';
+
 const INTENT_RESPONSES = {
-  greeting: '안녕하세요! 후원도우미예요. 후원하실 금액을 알려주시면 지금 가장 필요한 물품을 찾아드릴게요.',
+  greeting: GREETING,
   thanks: '도움이 되었다니 기뻐요. 더 궁금한 게 있으면 언제든 물어보세요!',
   help: "저는 예산에 맞는 후원 물품을 추천해 드려요. '3만원'처럼 금액을 알려주시면 지금 가장 급한 기관과 물품을 찾아드립니다.",
 };
@@ -26,12 +37,8 @@ export default function AiChatbot() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [lastBudget, setLastBudget] = useState(null);
-  const [messages, setMessages] = useState([
-    {
-      type: 'bot',
-      text: '안녕하세요! 후원하실 금액을 알려주시면 지금 가장 필요한 물품을 찾아드릴게요.',
-    },
-  ]);
+  const [messages, setMessages] = useState([{ type: 'bot', text: GREETING }]);
+  const started = messages.length > 1;
 
   const endRef = useRef(null);
 
@@ -70,8 +77,9 @@ export default function AiChatbot() {
     recommend(null, amount);
   };
 
-  const handleSend = () => {
-    const trimmed = input.trim();
+  /** 입력창 전송과 질문 칩 클릭이 공유하는 처리 경로 — 둘 다 사용자가 직접 친 것처럼 동작한다. */
+  const sendText = (text) => {
+    const trimmed = text.trim();
     if (!trimmed || loading) return;
 
     pushMessage({ type: 'user', text: trimmed });
@@ -98,8 +106,22 @@ export default function AiChatbot() {
     recommend(trimmed, lastBudget);
   };
 
+  const handleSend = () => sendText(input);
+  const handleSample = (question) => sendText(question);
+
   const linkFor = (pick) =>
     role ? `/items/${pick.item.id}` : `/auth?next=/items/${pick.item.id}`;
+
+  const renderQuestionChip = (question, extraClassName = '') => (
+    <button
+      key={question}
+      onClick={() => handleSample(question)}
+      disabled={loading}
+      className={`rounded-full border border-hairline px-3 py-1.5 text-left text-xs text-subtle transition hover:border-brand hover:text-brand disabled:opacity-40 ${extraClassName}`}
+    >
+      <span className="text-brand">Q.</span> {question}
+    </button>
+  );
 
   if (!open) {
     return (
@@ -140,7 +162,7 @@ export default function AiChatbot() {
           ) : (
             <div key={i} className="space-y-2">
               <div className="flex justify-start">
-                <span className="max-w-[85%] rounded-2xl rounded-bl-sm bg-white px-3.5 py-2 text-sm leading-relaxed text-ink">
+                <span className="max-w-[85%] whitespace-pre-line rounded-2xl rounded-bl-sm bg-white px-3.5 py-2 text-sm leading-relaxed text-ink">
                   {m.text}
                 </span>
               </div>
@@ -160,6 +182,12 @@ export default function AiChatbot() {
               )}
             </div>
           )
+        )}
+
+        {!started && (
+          <div className="flex flex-col gap-1.5">
+            {SAMPLE_QUESTIONS.map((q) => renderQuestionChip(q, 'bg-white'))}
+          </div>
         )}
 
         {loading && (
@@ -182,6 +210,12 @@ export default function AiChatbot() {
       </div>
 
       <div className="border-t border-hairline bg-white p-3">
+        {started && (
+          <div className="scrollbar-hide mb-2 flex gap-1.5 overflow-x-auto">
+            {SAMPLE_QUESTIONS.map((q) => renderQuestionChip(q, 'shrink-0 whitespace-nowrap'))}
+          </div>
+        )}
+
         <div className="mb-2 flex flex-wrap gap-1.5">
           {QUICK.map((b) => (
             <button

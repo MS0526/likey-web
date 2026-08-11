@@ -105,6 +105,15 @@ export async function fetchGeminiRecommendation({ budget, query, requests }) {
     }),
   });
 
+  if (import.meta.env.DEV && !res.ok) {
+    const body = await res.clone().text();
+    if (res.status === 429) {
+      console.warn('[gemini 실패] 무료 티어 rate limit(분당 10회) 초과', res.status, body);
+    } else {
+      console.warn('[gemini 실패]', res.status, body);
+    }
+  }
+
   if (!res.ok) throw new Error(`Gemini API 요청 실패: ${res.status}`);
 
   const data = await res.json();
