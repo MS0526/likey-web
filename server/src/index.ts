@@ -1,12 +1,9 @@
+import 'dotenv/config';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import itemRouter from './routes/itemRoutes';
 import authRouter from './routes/authRoutes';
-// import aiRouter from './routes/aiRoutes'; // AI 추천/챗봇 라우터 추가 시 주석 해제
-
-// 0. 환경변수(.env) 로드
-dotenv.config();
+import aiRouter from './routes/aiRoutes'; // 1. AI 라우터 import 추가
 
 const app = express();
 // Render, Railway 등 배포 환경에서 주입해주는 동적 PORT 사용 (기본값 5000)
@@ -36,7 +33,7 @@ app.use(
 // 2. JSON 요청 Body 파싱
 app.use(express.json());
 
-// 3. 백엔드 루트 경로 (배포 상태 확인용)
+// 3. 백엔드 루트 경로
 app.get('/', (req: Request, res: Response) => {
   res.send('🚀 LIKEY 백엔드 API 서버가 정상적으로 실행 중입니다!');
 });
@@ -49,10 +46,10 @@ app.get('/api/test', (req: Request, res: Response) => {
   });
 });
 
-// 5. 라우터 연결
+// 5. API 라우터 연결
 app.use('/api', itemRouter);
 app.use('/api', authRouter);
-// app.use('/api', aiRouter); // AI 라우터가 있다면 함께 연결
+app.use('/api/ai', aiRouter); // 2. AI 라우터 연결 (POST /api/ai/recommend 호출 가능)
 
 // 6. 서버 실행 ('0.0.0.0' 바인딩으로 배포 환경 외부 접속 허용)
 app.listen(Number(PORT), '0.0.0.0', () => {
