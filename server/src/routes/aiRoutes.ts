@@ -17,7 +17,10 @@ router.post('/recommend', async (req: Request, res: Response) => {
 1. 반드시 아래 제공된 [후원 요청 목록]의 requestId만 사용해야 해. 없는 requestId를 지어내면 안 돼.
 2. 추천된 물품들의 총 금액(price * qty의 합)은 사용자의 예산(${budget}원)을 초과할 수 없어.
 3. 각 물품의 수량(qty)은 해당 요청의 남은 수량(remain)을 초과할 수 없어.
-4. 사용자 요청사항(예: 학용품, 상비약 등) 키워드가 있다면 해당되는 물품을 최우선으로 추천해줘.
+4. 사용자 요청사항에 구체적인 키워드나 카테고리(예: 학용품, 상비약 등)가 있다면:
+   - 그 카테고리(category)와 일치하는 물품만 추천해. 예산이 남더라도 카테고리가 다른 물품을 끼워 넣지 마.
+   - 일치하는 물품이 하나도 없으면 억지로 추천하지 말고 recommendations를 빈 배열로 반환해.
+5. 사용자 요청사항이 없거나 막연하면(예: "가장 필요한 물품 추천"), 달성률(percent)이 낮은 순서로 우선 추천해.
 
 [후원 요청 목록]
 ${JSON.stringify(requests, null, 2)}
@@ -40,7 +43,12 @@ ${JSON.stringify(requests, null, 2)}
       model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: `예산 ${budget}원으로 적절한 물품을 추천해줘.` },
+        {
+          role: 'user',
+          content: prompt
+            ? `"${prompt}" — 이 요청에 맞게, 예산 ${budget}원 안에서 물품을 추천해줘.`
+            : `예산 ${budget}원으로 가장 필요한 물품을 추천해줘.`,
+        },
       ],
       response_format: { type: 'json_object' },
       temperature: 0.2,
