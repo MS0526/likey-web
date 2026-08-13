@@ -1,5 +1,5 @@
 import { api } from '../lib/api';
-import { items } from '../data/items';
+import { items, CATEGORIES } from '../data/items';
 import { getOrganizationById } from '../data/organizations';
 import { progressOf, formatWon } from './urgency';
 import { fetchGeminiRecommendation } from './geminiRecommend';
@@ -7,6 +7,31 @@ import { fetchGeminiRecommendation } from './geminiRecommend';
 /** 요청 하나의 남은 수량 */
 const remainOf = (req) =>
   req.neededQty - req.receivedQty - (req.pendingQty ?? 0);
+
+const categoryLabel = (key) => CATEGORIES.find((c) => c.key === key)?.label ?? key;
+
+/** 열려 있는 요청만 골라 백엔드 프롬프트에 넣을 압축된 형태로 변환한다. */
+function buildApiContext(requests) {
+  return requests
+    .filter((r) => r.status === 'open')
+    .map((r) => {
+      const item = items.find((i) => i.id === r.itemId);
+      const org = getOrganizationById(r.orgId);
+      if (!item || !org) return null;
+
+      return {
+        requestId: r.id,
+        name: item.name,
+        category: categoryLabel(item.category),
+        price: item.price,
+        org: org.name,
+        needed: r.neededQty,
+        remain: remainOf(r),
+        percent: progressOf(r),
+      };
+    })
+    .filter(Boolean);
+}
 
 /**
  * 서버 응답을 UI가 쓰는 형태로 변환한다.
@@ -99,7 +124,11 @@ function localRecommend(budget, requests, maxPicks = 3) {
  */
 export async function fetchRecommendation({ budget = null, query = null, requests }) {
   try {
-    const res = await api.post('/api/ai/recommend', { budget, query });
+    const res = await api.post('/api/ai/recommend', {
+      budget,
+      prompt: query,
+      requests: buildApiContext(requests),
+    });
     const data = res.data;
     if (data?.recommendations?.length) {
       return { ...normalize(data, requests), source: 'api' };
