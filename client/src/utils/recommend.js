@@ -133,7 +133,10 @@ export async function fetchRecommendation({ budget = null, query = null, request
     if (data?.recommendations?.length) {
       return { ...normalize(data, requests), source: 'api' };
     }
-  } catch {
+  } catch (err) {
+    if (import.meta.env.DEV) {
+      console.warn('[api 실패]', err.response?.status, err.response?.data);
+    }
     // 백엔드 미구현·미기동 → 다음 단계로 폴백
   }
 
