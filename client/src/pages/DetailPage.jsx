@@ -16,15 +16,19 @@ export default function DetailPage() {
 
   const item = getItemById(id);
 
-  // 이 물품을 요청한 기관 목록 — 가까운 순으로 정렬
+  // 이 물품을 요청한 기관 목록 — 긴급 기관을 먼저, 그 안에서는 가까운 순으로 정렬
   const reqs = getRequestsByItem(id)
     .map((r) => ({ ...r, org: getOrganizationById(r.orgId), percent: progressOf(r) }))
-    .sort((a, b) => a.org.distanceKm - b.org.distanceKm);
+    .sort((a, b) => {
+      const urgentDiff = (b.urgentQty > 0 ? 1 : 0) - (a.urgentQty > 0 ? 1 : 0);
+      return urgentDiff !== 0 ? urgentDiff : a.org.distanceKm - b.org.distanceKm;
+    });
 
   const [orgId, setOrgId] = useState(reqs[0]?.orgId ?? '');
   const [qty, setQty] = useState(1);
   const [done, setDone] = useState(false);
   const [added, setAdded] = useState(false);
+  const [revealDonor, setRevealDonor] = useState(true);
 
   const picked = reqs.find((r) => r.orgId === orgId);
   // 남은 수량 = 필요 수량 - 이미 받은 수량 - 수락 대기 중인 수량
@@ -41,7 +45,13 @@ export default function DetailPage() {
 
   const handleDonate = () => {
     if (!picked || remain === 0) return;
-    createDonation({ itemId: item.id, orgId, qty: Math.min(qty, remain), donor: '나 (테스트 후원자)' });
+    createDonation({
+      itemId: item.id,
+      orgId,
+      qty: Math.min(qty, remain),
+      donor: '나 (테스트 후원자)',
+      anonymous: !revealDonor,
+    });
     setDone(true);
     setTimeout(() => navigate('/market'), 1600);
   };
@@ -133,7 +143,12 @@ export default function DetailPage() {
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <p className="text-sm text-ink">{r.org.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm text-ink">{r.org.name}</p>
+                        {r.urgentQty > 0 && (
+                          <span className="rounded-full bg-alert px-2 py-0.5 text-[11px] text-white">긴급</span>
+                        )}
+                      </div>
                       <span className="font-mono text-xs text-subtle">{r.org.distanceKm}km</span>
                     </div>
                     <div className="mt-2">
@@ -143,9 +158,12 @@ export default function DetailPage() {
                       <p className="mt-1 text-[11px] text-subtle">수락 대기 {r.pendingQty}개</p>
                     )}
                     <p className="mt-1.5 text-xs text-subtle">
-                      총 필요 {r.neededQty}개 · 현재 {r.receivedQty}개 ({r.percent}%)
+                      총 필요 {r.neededQty}개{r.urgentQty > 0 && ` (긴급 ${r.urgentQty}개)`} · 현재 {r.receivedQty}개 ({r.percent}%)
                       {rRemain === 0 && <span className="ml-1 text-brand">· 모집 완료</span>}
                     </p>
+                    {r.urgentQty > 0 && r.urgentReason && (
+                      <p className="mt-1 text-[11px] text-alert">{r.urgentReason}</p>
+                    )}
                   </button>
                 );
               })}
@@ -158,7 +176,20 @@ export default function DetailPage() {
             </div>
           </div>
 
-          <div className="mt-6 flex gap-2.5">
+          <label className="mt-6 flex items-center gap-2 text-sm text-ink">
+            <input
+              type="checkbox"
+              checked={revealDonor}
+              onChange={(e) => setRevealDonor(e.target.checked)}
+              className="h-4 w-4 rounded border-hairline"
+            />
+            후원자명을 공개합니다
+          </label>
+          <p className="mt-1 text-[11px] text-subtle">
+            체크 해제 시 후원 인증에 "익명의 후원자"로 표시됩니다
+          </p>
+
+          <div className="mt-4 flex gap-2.5">
             <div className="flex flex-1 flex-col items-center gap-1.5">
               <button
                 onClick={handleAddToCart}

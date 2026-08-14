@@ -28,15 +28,21 @@ export default function MarketPage() {
 
   const urgent = useMemo(() => {
     const urgentItemIds = new Set(
-      requests.filter((r) => r.status === 'open' && r.isUrgent).map((r) => r.itemId)
+      requests.filter((r) => r.status === 'open' && r.urgentQty > 0).map((r) => r.itemId)
     );
 
     const manual = items
       .filter((item) => urgentItemIds.has(item.id))
       .map((item) => {
         const itemRequests = getRequestsByItem(item.id);
-        const urgentReason = itemRequests.find((r) => r.isUrgent)?.urgentReason ?? null;
-        return { item, percent: progressOfAll(itemRequests), urgentReason };
+        const urgentReq = itemRequests.find((r) => r.urgentQty > 0) ?? null;
+        return {
+          item,
+          percent: progressOfAll(itemRequests),
+          urgentReason: urgentReq?.urgentReason ?? null,
+          neededQty: urgentReq?.neededQty ?? null,
+          urgentQty: urgentReq?.urgentQty ?? 0,
+        };
       });
 
     const auto = items
@@ -44,7 +50,7 @@ export default function MarketPage() {
       .map((item) => ({ item, percent: progressOfAll(getRequestsByItem(item.id)) }))
       .filter((r) => r.percent < 40);
 
-    return [...manual, ...auto].slice(0, 4);
+    return [...manual, ...auto];
   }, [requests]);
 
   return (

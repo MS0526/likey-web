@@ -1,6 +1,7 @@
 import { createContext, useContext, useMemo, useState } from 'react';
 import { donations as seedDonations } from '../data/donations';
 import { requests as seedRequests } from '../data/requests';
+import { proofs as seedProofs } from '../data/proofs';
 import { getItemById } from '../data/items';
 
 const DonationContext = createContext(null);
@@ -8,6 +9,7 @@ const DonationContext = createContext(null);
 export function DonationProvider({ children }) {
   const [donations, setDonations] = useState(seedDonations);
   const [requests, setRequests] = useState(seedRequests);
+  const [proofs, setProofs] = useState(seedProofs);
 
   // 요청(orgId+itemId)별로 아직 기관이 수락하지 않은 pending 후원 수량 합계.
   // receivedQty(달성률)는 건드리지 않고, 화면에 "수락 대기 N개"로 별도 노출하는 데만 쓴다.
@@ -26,13 +28,14 @@ export function DonationProvider({ children }) {
   const withPendingQty = (r) => ({ ...r, pendingQty: getPendingQty(r.orgId, r.itemId) });
 
   /** 개인이 결제 → 수락 대기 상태로 후원 생성 */
-  const createDonation = ({ itemId, orgId, qty, donor = '나' }) => {
+  const createDonation = ({ itemId, orgId, qty, donor = '나', anonymous = false }) => {
     const donation = {
       id: `don-${Date.now()}`,
       itemId,
       orgId,
       qty,
       donor,
+      anonymous,
       date: new Date().toISOString().slice(0, 10),
       status: 'pending',
     };
@@ -64,22 +67,60 @@ export function DonationProvider({ children }) {
       prev.map((d) => (d.id === donationId ? { ...d, status: 'rejected' } : d))
     );
 
-  /** 기관이 새 물품 요청을 등록 → 즉시 마켓에 노출되는 open 요청 생성 */
+  /**
+   * 기관이 물품 요청을 등록 → 즉시 마켓에 노출되는 open 요청 생성.
+   * 같은 (orgId, itemId) 조합의 open 요청이 이미 있으면 새로 만들지 않고
+   * 수량만 합친다 — 같은 물품을 여러 번 요청해도 목록이 쌓이지 않게 하기 위함.
+   */
   const addRequest = ({ orgId, itemId, neededQty, isUrgent = false, urgentReason = null }) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const existing = requests.find(
+      (r) => r.orgId === orgId && r.itemId === itemId && r.status === 'open'
+    );
+
+    if (existing) {
+      const updated = {
+        ...existing,
+        neededQty: existing.neededQty + neededQty,
+        urgentQty: (existing.urgentQty ?? 0) + (isUrgent ? neededQty : 0),
+        urgentReason: isUrgent ? urgentReason : existing.urgentReason,
+        date: today,
+      };
+      setRequests((prev) => prev.map((r) => (r.id === existing.id ? updated : r)));
+      return updated;
+    }
+
     const request = {
       id: `req-${Date.now()}`,
       orgId,
       itemId,
       neededQty,
       receivedQty: 0,
-      date: new Date().toISOString().slice(0, 10),
+      date: today,
       status: 'open',
-      isUrgent,
+      urgentQty: isUrgent ? neededQty : 0,
       urgentReason: isUrgent ? urgentReason : null,
     };
     setRequests((prev) => [request, ...prev]);
     return request;
   };
+
+  /** 오늘 이 기관이 긴급으로 등록(또는 긴급 병합)한 open 요청 건수 — 일일 3건 제한에 사용 */
+  const countTodayUrgent = (orgId) => {
+    const today = new Date().toISOString().slice(0, 10);
+    return requests.filter(
+      (r) => r.orgId === orgId && (r.urgentQty ?? 0) > 0 && r.date === today
+    ).length;
+  };
+
+  /** 기관이 준비해 둔 인증을 공개 → /feed에 노출 */
+  const publishProof = (proofId) =>
+    setProofs((prev) => prev.map((p) => (p.id === proofId ? { ...p, published: true } : p)));
+
+  const getProofsByOrg = (orgId) => proofs.filter((p) => p.orgId === orgId);
+
+  const getPublishedProofs = () =>
+    proofs.filter((p) => p.published).sort((a, b) => (a.date < b.date ? 1 : -1));
 
   const value = useMemo(
     () => ({
@@ -89,6 +130,7 @@ export function DonationProvider({ children }) {
       approve,
       reject,
       addRequest,
+      countTodayUrgent,
       getPendingQty,
       getRequestsByItem: (itemId) =>
         requests.filter((r) => r.itemId === itemId && r.status === 'open').map(withPendingQty),
@@ -97,8 +139,11 @@ export function DonationProvider({ children }) {
       getDonationsByOrg: (orgId) => donations.filter((d) => d.orgId === orgId),
       totalAmount: (list) =>
         list.reduce((s, d) => s + getItemById(d.itemId).price * d.qty, 0),
+      publishProof,
+      getProofsByOrg,
+      getPublishedProofs,
     }),
-    [donations, requests]
+    [donations, requests, proofs]
   );
 
   return <DonationContext.Provider value={value}>{children}</DonationContext.Provider>;

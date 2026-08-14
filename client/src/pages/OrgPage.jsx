@@ -1,14 +1,17 @@
 import { useState } from 'react';
-import { Package, CheckCircle2, BarChart3, Plus, X } from 'lucide-react';
+import { Package, CheckCircle2, BarChart3, Camera, Plus, X } from 'lucide-react';
 import OrgHeader from '../components/OrgHeader';
 import MetricCard from '../components/MetricCard';
 import TabNav from '../components/TabNav';
 import RequestRow from '../components/RequestRow';
 import ApprovalRow from '../components/ApprovalRow';
 import UsageTable from '../components/UsageTable';
+import ProofCard from '../components/ProofCard';
 import { organizations } from '../data/organizations';
 import { items } from '../data/items';
 import { useDonation } from '../contexts/DonationContext';
+
+const DAILY_URGENT_LIMIT = 3;
 
 export default function OrgPage() {
   const org = organizations[0];
@@ -19,13 +22,26 @@ export default function OrgPage() {
   const [newIsUrgent, setNewIsUrgent] = useState(false);
   const [newUrgentReason, setNewUrgentReason] = useState('');
 
-  const { getDonationsByOrg, getRequestsByOrg, approve, reject, totalAmount, addRequest } =
-    useDonation();
+  const {
+    getDonationsByOrg,
+    getRequestsByOrg,
+    approve,
+    reject,
+    totalAmount,
+    addRequest,
+    countTodayUrgent,
+    getProofsByOrg,
+    publishProof,
+  } = useDonation();
 
   const mine = getDonationsByOrg(org.id);
   const pending = mine.filter((d) => d.status === 'pending');
   const settled = mine.filter((d) => d.status === 'shipping' || d.status === 'received');
   const amount = totalAmount(settled);
+  const myProofs = getProofsByOrg(org.id);
+  const unpublishedProofs = myProofs.filter((p) => !p.published).length;
+  const todayUrgentCount = countTodayUrgent(org.id);
+  const urgentLimitReached = todayUrgentCount >= DAILY_URGENT_LIMIT;
 
   const openRequestModal = () => {
     setNewItemId(items[0]?.id ?? '');
@@ -53,6 +69,7 @@ export default function OrgPage() {
     { key: 'request', label: '물품 요청', Icon: Package },
     { key: 'approve', label: '물품 수락', Icon: CheckCircle2, badge: pending.length },
     { key: 'usage', label: '사용 현황', Icon: BarChart3 },
+    { key: 'proof', label: '후원 인증', Icon: Camera, badge: unpublishedProofs },
   ];
 
   return (
@@ -124,6 +141,26 @@ export default function OrgPage() {
             </div>
           </section>
         )}
+
+        {tab === 'proof' && (
+          <section className="mt-6">
+            <h2 className="text-lg text-ink">후원 인증</h2>
+            <p className="mt-1.5 text-sm text-subtle">
+              준비한 인증 사진을 공개하면 후원자가 후원 인증에서 볼 수 있습니다.
+            </p>
+            <div className="mt-4 grid gap-4 md:grid-cols-3">
+              {myProofs.map((p) => (
+                <ProofCard key={p.id} proof={p} onPublish={publishProof} />
+              ))}
+            </div>
+            {myProofs.length === 0 && (
+              <div className="rounded-xl border border-hairline bg-white py-16 text-center">
+                <Camera size={28} className="mx-auto text-brand" />
+                <p className="mt-3 text-sm text-ink">준비된 인증이 없습니다</p>
+              </div>
+            )}
+          </section>
+        )}
       </div>
 
       {showRequestModal && (
@@ -166,15 +203,23 @@ export default function OrgPage() {
                 />
               </div>
 
-              <label className="flex items-center gap-2 text-sm text-ink">
-                <input
-                  type="checkbox"
-                  checked={newIsUrgent}
-                  onChange={(e) => setNewIsUrgent(e.target.checked)}
-                  className="h-4 w-4 rounded border-hairline"
-                />
-                긴급 후원으로 등록
-              </label>
+              <div>
+                <label className="flex items-center gap-2 text-sm text-ink">
+                  <input
+                    type="checkbox"
+                    checked={newIsUrgent}
+                    disabled={urgentLimitReached}
+                    onChange={(e) => setNewIsUrgent(e.target.checked)}
+                    className="h-4 w-4 rounded border-hairline disabled:opacity-40"
+                  />
+                  긴급 후원으로 등록
+                </label>
+                <p className={`mt-1 text-[11px] ${urgentLimitReached ? 'text-alert' : 'text-subtle'}`}>
+                  {urgentLimitReached
+                    ? `오늘 등록 가능한 긴급 요청을 모두 사용했습니다 (${DAILY_URGENT_LIMIT}/${DAILY_URGENT_LIMIT})`
+                    : `오늘 ${DAILY_URGENT_LIMIT - todayUrgentCount}건 더 등록할 수 있어요`}
+                </p>
+              </div>
 
               {newIsUrgent && (
                 <div>
