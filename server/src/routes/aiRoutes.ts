@@ -73,7 +73,12 @@ ${JSON.stringify(requests, null, 2)}
     return res.status(200).json(result);
   } catch (error) {
     console.error('AI Recommend Error:', error);
-    return res.status(500).json({ error: 'AI 추천 생성 중 오류가 발생했습니다.' });
+    const err = error as { code?: string };
+    return res.status(500).json({
+      success: false,
+      code: err?.code ?? 'unknown',
+      message: '추천을 생성하지 못했습니다',
+    });
   }
 });
 
