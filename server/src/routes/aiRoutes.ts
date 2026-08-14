@@ -2,10 +2,22 @@ import { Router, Request, Response } from 'express';
 import OpenAI from 'openai';
 
 const router = Router();
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+let openai: OpenAI | null = null;
+if (process.env.OPENAI_API_KEY) {
+  openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+}
 
 // POST /api/ai/recommend
 router.post('/recommend', async (req: Request, res: Response) => {
+  if (!openai) {
+    return res.status(503).json({
+      success: false,
+      code: 'missing_api_key',
+      message: 'AI 추천 기능이 설정되지 않았습니다 (OPENAI_API_KEY 누락)',
+    });
+  }
+
   try {
     const { budget, prompt, requests } = req.body;
 
@@ -61,7 +73,12 @@ ${JSON.stringify(requests, null, 2)}
     return res.status(200).json(result);
   } catch (error) {
     console.error('AI Recommend Error:', error);
-    return res.status(500).json({ error: 'AI 추천 생성 중 오류가 발생했습니다.' });
+    const err = error as { code?: string };
+    return res.status(500).json({
+      success: false,
+      code: err?.code ?? 'unknown',
+      message: '추천을 생성하지 못했습니다',
+    });
   }
 });
 

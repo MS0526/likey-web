@@ -1,13 +1,11 @@
-import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Heart, Gift, Users, Store, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Heart, Gift, Users, ChevronRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function AuthSelectPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [notice, setNotice] = useState(false);
 
   // 외부 URL 리다이렉트 방지 — 내부 경로만 허용
   const raw = params.get('next');
@@ -23,7 +21,6 @@ export default function AuthSelectPage() {
       iconBg: 'bg-brand-soft',
       iconColor: 'text-brand',
       linkColor: 'text-brand',
-      ready: true,
     },
     {
       key: 'org',
@@ -34,18 +31,6 @@ export default function AuthSelectPage() {
       iconBg: 'bg-accent-soft',
       iconColor: 'text-accent-ink',
       linkColor: 'text-accent-ink',
-      ready: true,
-    },
-    {
-      key: 'seller',
-      to: null,
-      Icon: Store,
-      title: '판매자 회원',
-      desc: '보육원, 아동센터 등에 후원될 고품질의 물건을 제공합니다.',
-      iconBg: 'bg-hairline',
-      iconColor: 'text-subtle',
-      linkColor: 'text-subtle',
-      ready: false,
     },
   ];
 
@@ -72,49 +57,25 @@ export default function AuthSelectPage() {
           </p>
         )}
 
-        <div className="mx-auto mt-12 grid max-w-4xl gap-5 md:grid-cols-3">
-          {TYPES.map((t) => {
-            const inner = (
-              <>
-                <div className={`flex h-12 w-12 items-center justify-center rounded-full ${t.iconBg}`}>
-                  <t.Icon size={22} className={t.iconColor} />
-                </div>
-                <p className="mt-6 text-lg text-ink">{t.title}</p>
-                <p className="mt-3 text-sm leading-relaxed text-subtle">{t.desc}</p>
-                <span className={`mt-6 flex items-center gap-1 text-sm ${t.linkColor}`}>
-                  {t.ready ? '로그인하기' : '준비 중'}
-                  {t.ready && <ChevronRight size={14} />}
-                </span>
-              </>
-            );
-
-            const base = 'rounded-2xl bg-white p-7 text-left transition';
-
-            return t.ready ? (
-              <Link
-                key={t.key}
-                to={t.to}
-                className={`${base} border border-hairline hover:border-brand`}
-              >
-                {inner}
-              </Link>
-            ) : (
-              <button
-                key={t.key}
-                onClick={() => setNotice(true)}
-                className={`${base} border border-hairline opacity-70`}
-              >
-                {inner}
-              </button>
-            );
-          })}
+        <div className="mx-auto mt-12 grid max-w-2xl gap-5 md:grid-cols-2">
+          {TYPES.map((t) => (
+            <Link
+              key={t.key}
+              to={t.to}
+              className="rounded-2xl border border-hairline bg-white p-7 text-left transition hover:border-brand"
+            >
+              <div className={`flex h-12 w-12 items-center justify-center rounded-full ${t.iconBg}`}>
+                <t.Icon size={22} className={t.iconColor} />
+              </div>
+              <p className="mt-6 text-lg text-ink">{t.title}</p>
+              <p className="mt-3 text-sm leading-relaxed text-subtle">{t.desc}</p>
+              <span className={`mt-6 flex items-center gap-1 text-sm ${t.linkColor}`}>
+                로그인하기
+                <ChevronRight size={14} />
+              </span>
+            </Link>
+          ))}
         </div>
-
-        {notice && (
-          <p className="mt-8 text-center text-sm text-accent-ink">
-            판매자 등록은 준비 중입니다. 현재는 플랫폼이 직접 매입한 물품만 제공됩니다.
-          </p>
-        )}
 
         <div className="mt-12 text-center">
           <button

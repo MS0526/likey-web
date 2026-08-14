@@ -5,13 +5,14 @@ import { formatWon } from '../utils/urgency';
 export default function ApprovalRow({ donation, onApprove, onReject }) {
   const item = getItemById(donation.itemId);
   const total = item.price * donation.qty;
+  const donorLabel = donation.anonymous ? '익명의 후원자' : donation.donor;
 
   return (
     <div className="flex items-center justify-between rounded-xl border border-hairline bg-white px-5 py-4">
       <div>
         <p className="text-sm text-ink">{item.name} × {donation.qty}</p>
         <p className="mt-1 text-xs text-subtle">
-          후원자: {donation.donor} · {donation.date} ·{' '}
+          후원자: {donorLabel} · {donation.date} ·{' '}
           <span className="font-mono">{formatWon(total)}원</span>
         </p>
       </div>

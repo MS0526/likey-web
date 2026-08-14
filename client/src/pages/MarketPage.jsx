@@ -26,14 +26,32 @@ export default function MarketPage() {
     [category, query]
   );
 
-  const urgent = useMemo(
-    () =>
-      items
-        .map((item) => ({ item, percent: progressOfAll(getRequestsByItem(item.id)) }))
-        .filter((r) => r.percent < 40)
-        .slice(0, 4),
-    [requests]
-  );
+  const urgent = useMemo(() => {
+    const urgentItemIds = new Set(
+      requests.filter((r) => r.status === 'open' && r.urgentQty > 0).map((r) => r.itemId)
+    );
+
+    const manual = items
+      .filter((item) => urgentItemIds.has(item.id))
+      .map((item) => {
+        const itemRequests = getRequestsByItem(item.id);
+        const urgentReq = itemRequests.find((r) => r.urgentQty > 0) ?? null;
+        return {
+          item,
+          percent: progressOfAll(itemRequests),
+          urgentReason: urgentReq?.urgentReason ?? null,
+          neededQty: urgentReq?.neededQty ?? null,
+          urgentQty: urgentReq?.urgentQty ?? 0,
+        };
+      });
+
+    const auto = items
+      .filter((item) => !urgentItemIds.has(item.id))
+      .map((item) => ({ item, percent: progressOfAll(getRequestsByItem(item.id)) }))
+      .filter((r) => r.percent < 40);
+
+    return [...manual, ...auto];
+  }, [requests]);
 
   return (
     <div className="min-h-screen bg-cream">

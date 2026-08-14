@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Heart, LogOut, Search, ShoppingCart } from 'lucide-react';
+import { ArrowLeft, Camera, Heart, LogOut, Search, ShoppingCart } from 'lucide-react';
 import { useAuth, useLogout } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 
@@ -32,6 +32,14 @@ export default function Header({ query, onQueryChange, orgCount }) {
       </div>
 
       <span className="whitespace-nowrap text-sm text-brand">{orgCount}개 기관 등록</span>
+
+      <Link
+        to="/feed"
+        className="flex items-center gap-1 whitespace-nowrap text-sm text-subtle transition hover:text-ink"
+      >
+        <Camera size={15} />
+        후원 인증
+      </Link>
 
       {user.role !== 'org' && (
         <button

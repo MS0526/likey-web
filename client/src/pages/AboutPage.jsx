@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import {
-  ArrowLeft, Heart, Shield, Sparkles, Store, Camera, Repeat, CreditCard, Check,
+  ArrowLeft, Heart, Shield, Sparkles, Camera, Repeat, CreditCard, Check,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -16,10 +16,8 @@ const NOW = [
 const NEXT = [
   { Icon: Sparkles, title: '후원도우미 AI', status: '개발 중',
     desc: '예산만 입력하면 지금 가장 급한 물품 조합을 추천합니다.' },
-  { Icon: Camera, title: '수령 인증 피드', status: '기획 완료',
-    desc: '기관이 물품을 받은 뒤 사진과 후기를 올려 후원자에게 전달합니다.' },
-  { Icon: Store, title: '판매자 회원', status: '준비 중',
-    desc: '개인 판매자가 직접 물품을 등록해 후원 마켓에 공급합니다.' },
+  { Icon: Camera, title: '후원 인증', status: '기획 완료',
+    desc: '기관이 물품을 받은 뒤 사진과 감사 인사를 올려 후원자에게 전달합니다.' },
   { Icon: CreditCard, title: '실제 결제 연동', status: '예정',
     desc: 'PG 연동으로 실제 결제와 거절 시 자동 환불을 처리합니다.' },
   { Icon: Repeat, title: '정기 후원', status: '검토 중',

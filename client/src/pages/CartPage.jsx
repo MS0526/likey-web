@@ -12,6 +12,7 @@ export default function CartPage() {
   const { cartItems, removeFromCart, setQty, clearCart } = useCart();
   const { createDonation } = useDonation();
   const [done, setDone] = useState(false);
+  const [revealDonor, setRevealDonor] = useState(true);
 
   const rows = cartItems.map((c) => ({
     ...c,
@@ -24,7 +25,13 @@ export default function CartPage() {
   const handleCheckout = () => {
     if (rows.length === 0) return;
     rows.forEach((r) =>
-      createDonation({ itemId: r.itemId, orgId: r.orgId, qty: r.qty, donor: '나 (테스트 후원자)' })
+      createDonation({
+        itemId: r.itemId,
+        orgId: r.orgId,
+        qty: r.qty,
+        donor: '나 (테스트 후원자)',
+        anonymous: !revealDonor,
+      })
     );
     clearCart();
     setDone(true);
@@ -101,6 +108,19 @@ export default function CartPage() {
               <span className="text-sm text-subtle">총 결제 금액</span>
               <span className="font-mono text-lg text-brand">{formatWon(total)}원</span>
             </div>
+
+            <label className="mt-4 flex items-center gap-2 text-sm text-ink">
+              <input
+                type="checkbox"
+                checked={revealDonor}
+                onChange={(e) => setRevealDonor(e.target.checked)}
+                className="h-4 w-4 rounded border-hairline"
+              />
+              후원자명을 공개합니다
+            </label>
+            <p className="mt-1 text-[11px] text-subtle">
+              체크 해제 시 후원 인증에 "익명의 후원자"로 표시됩니다
+            </p>
 
             <button
               onClick={handleCheckout}

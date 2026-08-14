@@ -22,7 +22,7 @@ export default function UsageTable({ donations }) {
           <div key={d.id} className="grid grid-cols-4 items-center border-t border-hairline px-5 py-3.5">
             <span className="font-mono text-xs text-subtle">{d.date}</span>
             <span className="text-sm text-ink">{getItemById(d.itemId).name} × {d.qty}</span>
-            <span className="text-sm text-subtle">{d.donor}</span>
+            <span className="text-sm text-subtle">{d.anonymous ? '익명의 후원자' : d.donor}</span>
             <span>
               <span className={`rounded-full px-2.5 py-1 text-xs ${status.style}`}>
                 {status.label}
