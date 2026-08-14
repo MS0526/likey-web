@@ -12,7 +12,15 @@ export default function RequestRow({ request }) {
     <div className="rounded-xl border border-hairline bg-white px-5 py-4">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm text-ink">{item.name}</p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm text-ink">{item.name}</p>
+            {request.isUrgent && (
+              <span className="rounded-full bg-alert px-2 py-0.5 text-[11px] text-white">긴급</span>
+            )}
+          </div>
+          {request.isUrgent && request.urgentReason && (
+            <p className="mt-1 text-xs text-alert">{request.urgentReason}</p>
+          )}
           <p className="mt-1 text-xs text-subtle">
             {getCategoryLabel(item.category)} · {request.neededQty}개 요청 · {request.date}
           </p>

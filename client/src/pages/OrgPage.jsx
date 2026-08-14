@@ -16,6 +16,8 @@ export default function OrgPage() {
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [newItemId, setNewItemId] = useState(items[0]?.id ?? '');
   const [newNeededQty, setNewNeededQty] = useState(10);
+  const [newIsUrgent, setNewIsUrgent] = useState(false);
+  const [newUrgentReason, setNewUrgentReason] = useState('');
 
   const { getDonationsByOrg, getRequestsByOrg, approve, reject, totalAmount, addRequest } =
     useDonation();
@@ -28,6 +30,8 @@ export default function OrgPage() {
   const openRequestModal = () => {
     setNewItemId(items[0]?.id ?? '');
     setNewNeededQty(10);
+    setNewIsUrgent(false);
+    setNewUrgentReason('');
     setShowRequestModal(true);
   };
 
@@ -35,7 +39,13 @@ export default function OrgPage() {
     e.preventDefault();
     const neededQty = Number(newNeededQty);
     if (!newItemId || !Number.isFinite(neededQty) || neededQty <= 0) return;
-    addRequest({ orgId: org.id, itemId: newItemId, neededQty });
+    addRequest({
+      orgId: org.id,
+      itemId: newItemId,
+      neededQty,
+      isUrgent: newIsUrgent,
+      urgentReason: newIsUrgent ? newUrgentReason.trim() || null : null,
+    });
     setShowRequestModal(false);
   };
 
@@ -155,6 +165,29 @@ export default function OrgPage() {
                   className="mt-1.5 w-full rounded-lg border border-hairline px-3 py-2.5 text-sm text-ink"
                 />
               </div>
+
+              <label className="flex items-center gap-2 text-sm text-ink">
+                <input
+                  type="checkbox"
+                  checked={newIsUrgent}
+                  onChange={(e) => setNewIsUrgent(e.target.checked)}
+                  className="h-4 w-4 rounded border-hairline"
+                />
+                긴급 후원으로 등록
+              </label>
+
+              {newIsUrgent && (
+                <div>
+                  <label className="text-xs text-subtle">긴급 사유</label>
+                  <input
+                    type="text"
+                    value={newUrgentReason}
+                    onChange={(e) => setNewUrgentReason(e.target.value)}
+                    placeholder="예: 재고 소진으로 즉시 필요"
+                    className="mt-1.5 w-full rounded-lg border border-hairline px-3 py-2.5 text-sm text-ink"
+                  />
+                </div>
+              )}
 
               <div className="mt-2 flex gap-2.5">
                 <button

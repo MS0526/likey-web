@@ -9,7 +9,7 @@ export default function ItemCard({ item }) {
   const { getRequestsByItem } = useDonation();
   const reqs = getRequestsByItem(item.id);
   const percent = progressOfAll(reqs);
-  const urgency = urgencyOf(percent);
+  const urgency = reqs.some((r) => r.isUrgent) ? { key: 'high', label: '긴급' } : urgencyOf(percent);
   const pendingQty = reqs.reduce((s, r) => s + r.pendingQty, 0);
 
   return (

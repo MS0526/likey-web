@@ -12,7 +12,7 @@ export default function UrgentBanner({ items }) {
       </div>
 
       <div className="mt-4 grid gap-3 md:grid-cols-4">
-        {items.map(({ item, percent }) => (
+        {items.map(({ item, percent, urgentReason }) => (
           <Link
             key={item.id}
             to={`/items/${item.id}`}
@@ -23,7 +23,9 @@ export default function UrgentBanner({ items }) {
             </div>
             <div className="min-w-0">
               <p className="truncate text-sm text-ink">{item.name}</p>
-              <p className="mt-0.5 text-xs text-alert">{percent}% 달성</p>
+              <p className="mt-0.5 truncate text-xs text-alert">
+                {urgentReason || `${percent}% 달성`}
+              </p>
             </div>
           </Link>
         ))}

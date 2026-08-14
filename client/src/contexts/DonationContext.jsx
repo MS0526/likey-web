@@ -65,7 +65,7 @@ export function DonationProvider({ children }) {
     );
 
   /** 기관이 새 물품 요청을 등록 → 즉시 마켓에 노출되는 open 요청 생성 */
-  const addRequest = ({ orgId, itemId, neededQty }) => {
+  const addRequest = ({ orgId, itemId, neededQty, isUrgent = false, urgentReason = null }) => {
     const request = {
       id: `req-${Date.now()}`,
       orgId,
@@ -74,6 +74,8 @@ export function DonationProvider({ children }) {
       receivedQty: 0,
       date: new Date().toISOString().slice(0, 10),
       status: 'open',
+      isUrgent,
+      urgentReason: isUrgent ? urgentReason : null,
     };
     setRequests((prev) => [request, ...prev]);
     return request;
