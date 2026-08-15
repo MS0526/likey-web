@@ -211,22 +211,28 @@ export default function AiChatbot() {
 
       <div className="border-t border-hairline bg-white p-3">
         {started && (
-          <div className="scrollbar-hide mb-2 flex gap-1.5 overflow-x-auto">
-            {SAMPLE_QUESTIONS.map((q) => renderQuestionChip(q, 'shrink-0 whitespace-nowrap'))}
+          <div className="relative mb-2">
+            <div className="scrollbar-hide flex gap-1.5 overflow-x-auto">
+              {SAMPLE_QUESTIONS.map((q) => renderQuestionChip(q, 'shrink-0 whitespace-nowrap'))}
+            </div>
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white to-transparent" />
           </div>
         )}
 
-        <div className="mb-2 flex flex-wrap gap-1.5">
-          {QUICK.map((b) => (
-            <button
-              key={b}
-              onClick={() => handleQuick(b)}
-              disabled={loading}
-              className="rounded-full border border-hairline px-3 py-1 text-xs text-subtle transition hover:border-brand hover:text-brand disabled:opacity-40"
-            >
-              {b / 10000}만원
-            </button>
-          ))}
+        <div className="relative mb-2">
+          <div className="scrollbar-hide flex gap-1.5 overflow-x-auto">
+            {QUICK.map((b) => (
+              <button
+                key={b}
+                onClick={() => handleQuick(b)}
+                disabled={loading}
+                className="shrink-0 whitespace-nowrap rounded-full border border-hairline px-3 py-1 text-xs text-subtle transition hover:border-brand hover:text-brand disabled:opacity-40"
+              >
+                {b / 10000}만원
+              </button>
+            ))}
+          </div>
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white to-transparent" />
         </div>
 
         <div className="flex gap-2">

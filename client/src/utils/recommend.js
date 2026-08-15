@@ -62,12 +62,71 @@ function normalize(data, requests) {
 
 const DEFAULT_BUDGET = 30000;
 
+const ADULT_AGE_KEYWORDS = [
+  '20대', '30대', '40대', '50대', '60대', '70대', '80대', '90대',
+  '중년', '장년', '노인', '성인', '어른',
+];
+
+const MINOR_AGE_KEYWORDS = [
+  '영유아', '아기', '유아', '미취학', '어린이',
+  '유치원생', '초등학생', '중학생', '고등학생', '청소년', '아동', '학생',
+];
+
+const KOREAN_AGE_UNITS = {
+  한: 1, 두: 2, 세: 3, 네: 4, 다섯: 5, 여섯: 6, 일곱: 7, 여덟: 8, 아홉: 9,
+};
+
+const OUT_OF_RANGE_MESSAGE =
+  '라이키는 보육원·아동센터 등 아동·청소년 시설 후원 플랫폼이에요.\n0~18세 아이들을 위한 물품만 취급하고 있어요.';
+
+/** "열다섯살", "스무살"처럼 한글로 쓰인 나이를 숫자로 변환한다. 못 찾으면 null. */
+function parseKoreanAge(text) {
+  const unitPattern = Object.keys(KOREAN_AGE_UNITS).join('|');
+
+  if (/스무살/.test(text)) return 20;
+
+  let m = text.match(new RegExp(`스물(${unitPattern})?살`));
+  if (m) return 20 + (m[1] ? KOREAN_AGE_UNITS[m[1]] : 0);
+
+  m = text.match(new RegExp(`열(${unitPattern})?살`));
+  if (m) return 10 + (m[1] ? KOREAN_AGE_UNITS[m[1]] : 0);
+
+  m = text.match(new RegExp(`(${unitPattern})살`));
+  if (m) return KOREAN_AGE_UNITS[m[1]];
+
+  return null;
+}
+
+/** 질문에서 수혜 대상 연령대를 추정한다. 'minor' | 'adult' | null(언급 없음). */
+function detectAgeScope(text) {
+  if (!text) return null;
+
+  const digitMatch = text.match(/(\d+)\s*(살|세)/);
+  if (digitMatch) return Number(digitMatch[1]) <= 18 ? 'minor' : 'adult';
+
+  const koreanAge = parseKoreanAge(text);
+  if (koreanAge != null) return koreanAge <= 18 ? 'minor' : 'adult';
+
+  if (ADULT_AGE_KEYWORDS.some((k) => text.includes(k))) return 'adult';
+  if (MINOR_AGE_KEYWORDS.some((k) => text.includes(k))) return 'minor';
+
+  return null;
+}
+
+/** "제가 30대인데"처럼 후원자 본인 이야기인 경우 나이 언급을 수혜 대상 판단에서 제외한다. */
+const isSelfReference = (text) => /제가|저는|나는/.test(text ?? '');
+
 /**
  * 서버가 없을 때 쓰는 로컬 추천.
  * 달성률이 낮은(= 급한) 순으로 예산 안에서 담는다.
  * budget이 없으면(자유 질문에 이전 예산도 없는 경우) 기본 예산으로 계산하고 안내 문구를 덧붙인다.
+ * query에서 수혜 대상이 19세 이상 성인으로 파악되면(후원자 본인 언급 제외) 추천 없이 안내만 반환한다.
  */
-function localRecommend(budget, requests, maxPicks = 3) {
+function localRecommend(budget, requests, query = null, maxPicks = 3) {
+  if (!isSelfReference(query) && detectAgeScope(query) === 'adult') {
+    return { message: OUT_OF_RANGE_MESSAGE, picks: [], spent: 0 };
+  }
+
   const effectiveBudget = budget ?? DEFAULT_BUDGET;
 
   const pool = requests
@@ -151,5 +210,5 @@ export async function fetchRecommendation({ budget = null, query = null, request
     }
   }
 
-  return { ...localRecommend(budget, requests), source: 'local' };
+  return { ...localRecommend(budget, requests, query), source: 'local' };
 }
