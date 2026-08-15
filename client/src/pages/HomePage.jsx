@@ -8,6 +8,7 @@ import { useDonation } from '../contexts/DonationContext';
 import { useAuth } from '../contexts/AuthContext';
 import HowItWorks from '../components/HowItWorks';
 import AiDemo from '../components/AiDemo';
+import AvailableNow from '../components/AvailableNow';
 import StatBar from '../components/StarBar';
 
 export default function HomePage() {
@@ -48,12 +49,12 @@ export default function HomePage() {
             <Heart size={20} className="fill-accent text-accent" />
             <span className="text-base text-cream">라이키</span>
           </div>
-          <a href="#how-it-works" className="flex items-center gap-1 text-sm text-subtle">
+          <a href="#available-now" className="flex items-center gap-1 text-sm text-subtle">
             서비스 소개 <ArrowDown size={14} />
           </a>
         </div>
 
-        <div className="grid items-center gap-8 px-8 pb-16 pt-6 md:grid-cols-2">
+        <div className="grid items-center gap-8 px-8 pb-16 pt-6 md:grid-cols-2 md:gap-4 lg:gap-6">
           <div>
             <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-accent" />
@@ -89,7 +90,7 @@ export default function HomePage() {
           </div>
 
           <div className="flex justify-center">
-            <div className="w-full max-w-xs">
+            <div className="w-full max-w-md lg:max-w-xl">
               <KoreaMap
                 markers={organizations}
                 regionCounts={getRegionCounts()}
@@ -100,8 +101,9 @@ export default function HomePage() {
         </div>
       </section>
 
-       <HowItWorks />
       <AiDemo />
+      <HowItWorks />
+      <AvailableNow />
       <StatBar />
     </div>
   );

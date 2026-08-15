@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Sparkles } from 'lucide-react';
+import { X, Send, Sparkles } from 'lucide-react';
 import { useDonation } from '../contexts/DonationContext';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchRecommendation } from '../utils/recommend';
 import { formatWon } from '../utils/urgency';
 import { parseAmount } from '../utils/parseAmount';
 import { detectIntent } from '../utils/chatIntent';
+import { runWithTimeoutUX, SLOW_HINT_TEXT, TIMEOUT_TEXT } from '../utils/aiTimeout';
 import RecommendCard from './RecommendCard';
 
 const QUICK = [10000, 30000, 50000, 100000];
@@ -29,6 +30,9 @@ const INTENT_RESPONSES = {
 
 const NO_BUDGET_HINT = '예산을 알려주시면 더 정확하게 추천드릴게요.';
 
+const HINT_SEEN_KEY = 'likeyChatbotHintSeen';
+const OPENED_KEY = 'likeyChatbotOpened';
+
 export default function AiChatbot() {
   const { requests } = useDonation();
   const { role } = useAuth();
@@ -36,8 +40,13 @@ export default function AiChatbot() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [slowHint, setSlowHint] = useState(false);
   const [lastBudget, setLastBudget] = useState(null);
   const [messages, setMessages] = useState([{ type: 'bot', text: GREETING }]);
+  // 마켓 첫 진입 시(세션당 한 번)만 true로 시작 — sessionStorage 판단은 렌더 중 한 번만 읽는다.
+  const [showEntryHint, setShowEntryHint] = useState(
+    () => !sessionStorage.getItem(HINT_SEEN_KEY) && !sessionStorage.getItem(OPENED_KEY)
+  );
   const started = messages.length > 1;
 
   const endRef = useRef(null);
@@ -46,28 +55,57 @@ export default function AiChatbot() {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading, open]);
 
+  // 힌트 말풍선을 5초 후 자동으로 닫고, 다시 표시되지 않도록 세션에 기록한다.
+  useEffect(() => {
+    if (!showEntryHint) return;
+    sessionStorage.setItem(HINT_SEEN_KEY, '1');
+    const t = setTimeout(() => setShowEntryHint(false), 5000);
+    return () => clearTimeout(t);
+  }, []);
+
+  const handleOpen = () => {
+    setOpen(true);
+    setShowEntryHint(false);
+    sessionStorage.setItem(OPENED_KEY, '1');
+  };
+
   const pushMessage = (message) => setMessages((prev) => [...prev, message]);
 
-  /** query·budget으로 추천을 가져와 봇 말풍선을 추가한다. budget이 없으면 예산 안내를 덧붙인다. */
+  /**
+   * query·budget으로 추천을 가져와 봇 말풍선을 추가한다. budget이 없으면 예산 안내를 덧붙인다.
+   * 8초가 지나도 응답이 없으면 로딩 아래에 안내 문구를 띄우고, 30초가 지나면(fetchRecommendation
+   * 자체는 절대 멈추지 않지만) 요청을 포기하고 실패 말풍선 + 재시도 버튼을 보여준다
+   * (같은 query·budget을 재요청에 그대로 사용). 그 후 늦게 온 응답은 무시한다.
+   */
   const recommend = async (query, budget) => {
     setLoading(true);
-    try {
-      const result = await fetchRecommendation({ budget, query, requests });
-      pushMessage({
-        type: 'bot',
-        text: result.message,
-        picks: result.picks,
-        rest: budget != null ? budget - result.spent : null,
-        source: result.source,
-      });
-      if (budget == null) {
-        pushMessage({ type: 'bot', text: NO_BUDGET_HINT });
+    setSlowHint(false);
+
+    await runWithTimeoutUX(
+      (signal) => fetchRecommendation({ budget, query, requests, signal }),
+      {
+        onSlow: () => setSlowHint(true),
+        onTimeout: () => {
+          setLoading(false);
+          setSlowHint(false);
+          pushMessage({ type: 'bot', text: TIMEOUT_TEXT, retry: { query, budget } });
+        },
+        onSettle: (result) => {
+          setLoading(false);
+          setSlowHint(false);
+          pushMessage({
+            type: 'bot',
+            text: result.message,
+            picks: result.picks,
+            rest: budget != null ? budget - result.spent : null,
+            source: result.source,
+          });
+          if (budget == null) {
+            pushMessage({ type: 'bot', text: NO_BUDGET_HINT });
+          }
+        },
       }
-    } catch {
-      pushMessage({ type: 'bot', text: '추천을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.' });
-    } finally {
-      setLoading(false);
-    }
+    );
   };
 
   const handleQuick = (amount) => {
@@ -125,13 +163,28 @@ export default function AiChatbot() {
 
   if (!open) {
     return (
-      <button
-        onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-brand text-white shadow-lg transition hover:scale-105"
-        aria-label="후원도우미 AI 열기"
-      >
-        <MessageCircle size={24} />
-      </button>
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+        {showEntryHint && (
+          <div className="relative max-w-[220px] rounded-2xl bg-ink px-4 py-3 text-xs leading-relaxed text-white shadow-lg">
+            <button
+              onClick={() => setShowEntryHint(false)}
+              className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white text-ink shadow"
+              aria-label="힌트 닫기"
+            >
+              <X size={11} />
+            </button>
+            얼마를 후원할지 모르겠다면 물어보세요!
+          </div>
+        )}
+        <button
+          onClick={handleOpen}
+          className="chatbot-pulse flex items-center gap-2 rounded-full bg-brand px-5 py-3.5 text-sm text-white shadow-lg transition hover:scale-105"
+          aria-label="후원도우미 AI 열기"
+        >
+          <Sparkles size={18} className="text-accent" />
+          후원도우미 AI
+        </button>
+      </div>
     );
   }
 
@@ -177,6 +230,18 @@ export default function AiChatbot() {
                 </p>
               )}
 
+              {m.retry && (
+                <div className="flex justify-start">
+                  <button
+                    onClick={() => recommend(m.retry.query, m.retry.budget)}
+                    disabled={loading}
+                    className="rounded-full border border-brand px-3.5 py-1.5 text-xs text-brand transition hover:bg-brand hover:text-white disabled:opacity-40"
+                  >
+                    다시 시도
+                  </button>
+                </div>
+              )}
+
               {import.meta.env.DEV && m.source && (
                 <p className="text-center text-xs text-subtle">[{m.source}]</p>
               )}
@@ -191,7 +256,7 @@ export default function AiChatbot() {
         )}
 
         {loading && (
-          <div className="flex justify-start">
+          <div className="flex flex-col items-start gap-1.5">
             <span className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm bg-white px-4 py-3">
               <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-subtle" />
               <span
@@ -203,6 +268,9 @@ export default function AiChatbot() {
                 style={{ animationDelay: '300ms' }}
               />
             </span>
+            {slowHint && (
+              <span className="pl-1 text-xs text-subtle">{SLOW_HINT_TEXT}</span>
+            )}
           </div>
         )}
 

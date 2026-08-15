@@ -14,7 +14,8 @@ export function CartProvider({ children }) {
           c.id === existing.id ? { ...c, qty: c.qty + qty } : c
         );
       }
-      return [...prev, { id: `cart-${Date.now()}`, itemId, orgId, qty }];
+      const id = `cart-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      return [...prev, { id, itemId, orgId, qty }];
     });
   };
 

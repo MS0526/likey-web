@@ -105,15 +105,20 @@ function stripCodeFence(text) {
 /**
  * Gemini에 예산·질문·후원 요청 목록을 보내 추천을 받는다.
  * 실패(네트워크 오류, 형식 오류 등) 시 예외를 던지므로 호출부(recommend.js)에서 폴백 처리한다.
+ * 30초 안에 응답이 없으면(또는 signal이 취소되면) AbortError를 던진다.
  *
+ * @param {AbortSignal} [signal] 호출부(recommend.js)가 넘기는 취소 신호. 없으면 자체 30초 타임아웃만 적용된다.
  * @returns {{ message: string, recommendations: { requestId: string, qty: number, reason: string }[] }}
  */
-export async function fetchGeminiRecommendation({ budget, query, requests }) {
+export async function fetchGeminiRecommendation({ budget, query, requests, signal }) {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
   if (!apiKey) throw new Error('VITE_GEMINI_API_KEY가 설정되지 않았습니다.');
 
   const context = buildContext(requests);
   const prompt = buildPrompt({ budget, query, context });
+
+  const timeoutSignal = AbortSignal.timeout(30000);
+  const combinedSignal = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
 
   const res = await fetch(ENDPOINT, {
     method: 'POST',
@@ -125,6 +130,7 @@ export async function fetchGeminiRecommendation({ budget, query, requests }) {
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: { responseMimeType: 'application/json' },
     }),
+    signal: combinedSignal,
   });
 
   if (import.meta.env.DEV && !res.ok) {

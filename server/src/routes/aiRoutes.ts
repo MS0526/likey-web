@@ -3,9 +3,37 @@ import OpenAI from 'openai';
 
 const router = Router();
 
+// OpenAI 응답이 안 오면 기본적으로 무한정 대기하므로, 클라이언트 단에서 25초 타임아웃을 건다.
+// (프론트의 30초 타임아웃보다 짧게 잡아, 서버가 먼저 정리하고 상황을 알려줄 수 있게 한다)
+const OPENAI_TIMEOUT_MS = 25_000;
+
 let openai: OpenAI | null = null;
 if (process.env.OPENAI_API_KEY) {
-  openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: OPENAI_TIMEOUT_MS });
+}
+
+class UpstreamTimeoutError extends Error {}
+
+/**
+ * DNS/커넥션 단계에서 멈추는 경우 OpenAI SDK 자체 timeout이 못 잡아낼 수 있어,
+ * 라우트 핸들러가 절대 OPENAI_TIMEOUT_MS를 넘겨 응답을 붙들고 있지 않도록 이중으로 막는다.
+ * 늦게 도착하는 원래 promise는 무시하되, unhandled rejection 경고가 안 나게 미리 잡아둔다.
+ */
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  promise.catch(() => {});
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new UpstreamTimeoutError()), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
 }
 
 // POST /api/ai/recommend
@@ -71,20 +99,23 @@ ${JSON.stringify(requests, null, 2)}
 }
 `;
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        {
-          role: 'user',
-          content: prompt
-            ? `"${prompt}" — 이 요청에 맞게, 예산 ${budget}원 안에서 물품을 추천해줘.`
-            : `예산 ${budget}원으로 가장 필요한 물품을 추천해줘.`,
-        },
-      ],
-      response_format: { type: 'json_object' },
-      temperature: 0.2,
-    });
+    const completion = await withTimeout(
+      openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          {
+            role: 'user',
+            content: prompt
+              ? `"${prompt}" — 이 요청에 맞게, 예산 ${budget}원 안에서 물품을 추천해줘.`
+              : `예산 ${budget}원으로 가장 필요한 물품을 추천해줘.`,
+          },
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.2,
+      }),
+      OPENAI_TIMEOUT_MS
+    );
 
     // 옵셔널 체이닝(?. )을 사용해 undefined 에러 방지
     const content = completion.choices[0]?.message?.content;
@@ -92,6 +123,15 @@ ${JSON.stringify(requests, null, 2)}
 
     return res.status(200).json(result);
   } catch (error) {
+    if (error instanceof OpenAI.APIConnectionTimeoutError || error instanceof UpstreamTimeoutError) {
+      console.error(`AI Recommend Timeout: OpenAI가 ${OPENAI_TIMEOUT_MS}ms 안에 응답하지 않았습니다.`, error);
+      return res.status(504).json({
+        success: false,
+        code: 'upstream_timeout',
+        message: 'AI 응답이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.',
+      });
+    }
+
     console.error('AI Recommend Error:', error);
     const err = error as { code?: string };
     return res.status(500).json({

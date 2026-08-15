@@ -12,7 +12,7 @@ export default function Header({ query, onQueryChange, orgCount }) {
 
   return (
     <header className="flex items-center gap-4 bg-white px-6 py-3">
-      <Link to="/about" className="text-subtle">
+      <Link to="/" className="text-subtle">
         <ArrowLeft size={18} />
       </Link>
 
