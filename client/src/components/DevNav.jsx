@@ -2,7 +2,6 @@ import { NavLink } from 'react-router-dom';
 
 const links = [
   { to: '/', label: '첫화면', end: true },
-  { to: '/about', label: '소개' },
   { to: '/auth', label: '유형선택' },
   { to: '/login/user', label: '로그인' },
   { to: '/market', label: '마켓' },

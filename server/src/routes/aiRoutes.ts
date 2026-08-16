@@ -3,9 +3,37 @@ import OpenAI from 'openai';
 
 const router = Router();
 
+// OpenAI 응답이 안 오면 기본적으로 무한정 대기하므로, 클라이언트 단에서 25초 타임아웃을 건다.
+// (프론트의 30초 타임아웃보다 짧게 잡아, 서버가 먼저 정리하고 상황을 알려줄 수 있게 한다)
+const OPENAI_TIMEOUT_MS = 25_000;
+
 let openai: OpenAI | null = null;
 if (process.env.OPENAI_API_KEY) {
-  openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: OPENAI_TIMEOUT_MS });
+}
+
+class UpstreamTimeoutError extends Error {}
+
+/**
+ * DNS/커넥션 단계에서 멈추는 경우 OpenAI SDK 자체 timeout이 못 잡아낼 수 있어,
+ * 라우트 핸들러가 절대 OPENAI_TIMEOUT_MS를 넘겨 응답을 붙들고 있지 않도록 이중으로 막는다.
+ * 늦게 도착하는 원래 promise는 무시하되, unhandled rejection 경고가 안 나게 미리 잡아둔다.
+ */
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  promise.catch(() => {});
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new UpstreamTimeoutError()), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
 }
 
 // POST /api/ai/recommend
@@ -33,6 +61,26 @@ router.post('/recommend', async (req: Request, res: Response) => {
    - 그 카테고리(category)와 일치하는 물품만 추천해. 예산이 남더라도 카테고리가 다른 물품을 끼워 넣지 마.
    - 일치하는 물품이 하나도 없으면 억지로 추천하지 말고 recommendations를 빈 배열로 반환해.
 5. 사용자 요청사항이 없거나 막연하면(예: "가장 필요한 물품 추천"), 달성률(percent)이 낮은 순서로 우선 추천해.
+6. 아래 [수혜 대상 연령 판단] 규칙에 따라 수혜 대상이 19세 이상 성인으로 파악되면 recommendations를 반드시 빈 배열로 반환해.
+
+[수혜 대상 연령 판단]
+라이키는 보육원·아동센터 등 아동·청소년(0~18세)을 위한 후원 플랫폼이야.
+반드시 "누가 물품을 받는가"(수혜 대상)를 기준으로 판단해. 후원자 본인의 나이는 무관해.
+예) "20대 여성을 위한 후원 물품" → 수혜 대상이 성인 → 범위 밖
+    "제가 30대인데 뭘 후원하면 좋을까요" → 후원자 본인 이야기 → 정상 추천
+    "중학생 조카 또래 아이들 도와주고 싶어요" → 수혜 대상이 미성년 → 정상 추천
+
+- 지원 범위(0~18세): 영유아, 아기, 유아, 미취학, 어린이, 유치원생, 초등학생, 중학생, 고등학생, 청소년, 학생
+  숫자 나이(0살~18살, 0세~18세, 만 나이 포함) 및 한글 숫자(일곱살, 열살, 열다섯살 등) 포함
+- 범위 밖(19세 이상 성인): 20대, 30대, 40대, 50대, 중년, 장년, 노인, 성인, 어른, 19살 이상, 스무살 이상
+
+수혜 대상이 미성년자(0~18세)면 연령대에 맞는 물품을 우선 고르세요.
+- 영유아·유아(0~6세): 기저귀, 분유, 위생용품, 놀이용품
+- 초등학생(7~12세): 학용품, 도서, 의류, 간식
+- 중·고등학생(13~18세): 학용품, 참고서, 의류, 위생용품
+
+수혜 대상이 19세 이상 성인이면 recommendations는 빈 배열로 반환하고, message에서만 다음 취지로 안내해:
+"라이키는 보육원·아동센터 등 아동·청소년 시설 후원 플랫폼이에요. 0~18세 아이들을 위한 물품만 취급하고 있어요."
 
 [후원 요청 목록]
 ${JSON.stringify(requests, null, 2)}
@@ -51,20 +99,23 @@ ${JSON.stringify(requests, null, 2)}
 }
 `;
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        {
-          role: 'user',
-          content: prompt
-            ? `"${prompt}" — 이 요청에 맞게, 예산 ${budget}원 안에서 물품을 추천해줘.`
-            : `예산 ${budget}원으로 가장 필요한 물품을 추천해줘.`,
-        },
-      ],
-      response_format: { type: 'json_object' },
-      temperature: 0.2,
-    });
+    const completion = await withTimeout(
+      openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          {
+            role: 'user',
+            content: prompt
+              ? `"${prompt}" — 이 요청에 맞게, 예산 ${budget}원 안에서 물품을 추천해줘.`
+              : `예산 ${budget}원으로 가장 필요한 물품을 추천해줘.`,
+          },
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.2,
+      }),
+      OPENAI_TIMEOUT_MS
+    );
 
     // 옵셔널 체이닝(?. )을 사용해 undefined 에러 방지
     const content = completion.choices[0]?.message?.content;
@@ -72,6 +123,15 @@ ${JSON.stringify(requests, null, 2)}
 
     return res.status(200).json(result);
   } catch (error) {
+    if (error instanceof OpenAI.APIConnectionTimeoutError || error instanceof UpstreamTimeoutError) {
+      console.error(`AI Recommend Timeout: OpenAI가 ${OPENAI_TIMEOUT_MS}ms 안에 응답하지 않았습니다.`, error);
+      return res.status(504).json({
+        success: false,
+        code: 'upstream_timeout',
+        message: 'AI 응답이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.',
+      });
+    }
+
     console.error('AI Recommend Error:', error);
     const err = error as { code?: string };
     return res.status(500).json({

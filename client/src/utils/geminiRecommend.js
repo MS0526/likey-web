@@ -34,6 +34,25 @@ function buildContext(requests) {
     .filter(Boolean);
 }
 
+const AGE_SCOPE_SECTION = `[수혜 대상 연령 판단]
+라이키는 보육원·아동센터 등 아동·청소년(0~18세)을 위한 후원 플랫폼입니다.
+반드시 "누가 물품을 받는가"(수혜 대상)를 기준으로 판단하세요. 후원자 본인의 나이는 무관합니다.
+예) "20대 여성을 위한 후원 물품" → 수혜 대상이 성인 → 범위 밖
+    "제가 30대인데 뭘 후원하면 좋을까요" → 후원자 본인 이야기 → 정상 추천
+    "중학생 조카 또래 아이들 도와주고 싶어요" → 수혜 대상이 미성년 → 정상 추천
+
+- 지원 범위(0~18세): 영유아, 아기, 유아, 미취학, 어린이, 유치원생, 초등학생, 중학생, 고등학생, 청소년, 학생
+  숫자 나이(0살~18살, 0세~18세, 만 나이 포함) 및 한글 숫자(일곱살, 열살, 열다섯살 등) 포함
+- 범위 밖(19세 이상 성인): 20대, 30대, 40대, 50대, 중년, 장년, 노인, 성인, 어른, 19살 이상, 스무살 이상
+
+수혜 대상이 미성년자(0~18세)면 연령대에 맞는 물품을 우선 고르세요.
+- 영유아·유아(0~6세): 기저귀, 분유, 위생용품, 놀이용품
+- 초등학생(7~12세): 학용품, 도서, 의류, 간식
+- 중·고등학생(13~18세): 학용품, 참고서, 의류, 위생용품
+
+수혜 대상이 19세 이상 성인이면 recommendations는 빈 배열로 반환하고, message에서만 다음 취지로 안내하세요:
+"라이키는 보육원·아동센터 등 아동·청소년 시설 후원 플랫폼이에요. 0~18세 아이들을 위한 물품만 취급하고 있어요."`;
+
 function buildPrompt({ budget, query, context }) {
   const budgetSection =
     budget != null
@@ -55,12 +74,15 @@ ${budgetSection}
 [사용자 질문]
 ${query ?? '(없음)'}
 
+${AGE_SCOPE_SECTION}
+
 [규칙]
 - requestId는 반드시 위 목록에 있는 값만 사용하세요. 목록에 없는 값을 만들어내지 마세요.
 ${budgetRule}
 - 각 항목의 qty는 needed - received(남은 수량)를 넘지 않게 하세요.
 - 최대 ${MAX_PICKS}건까지만 추천하세요.
 - 사용자 질문에 특별한 요청이 있으면(예: "아이들이 좋아할 만한 것") 반영해서 고르세요.
+- [수혜 대상 연령 판단] 결과 수혜 대상이 19세 이상 성인이면 recommendations는 반드시 빈 배열([])로 반환하세요.
 - 반드시 아래 JSON 형식만 반환하세요. 설명 문장이나 마크다운 코드펜스는 포함하지 마세요.
 
 {
@@ -83,15 +105,20 @@ function stripCodeFence(text) {
 /**
  * Gemini에 예산·질문·후원 요청 목록을 보내 추천을 받는다.
  * 실패(네트워크 오류, 형식 오류 등) 시 예외를 던지므로 호출부(recommend.js)에서 폴백 처리한다.
+ * 30초 안에 응답이 없으면(또는 signal이 취소되면) AbortError를 던진다.
  *
+ * @param {AbortSignal} [signal] 호출부(recommend.js)가 넘기는 취소 신호. 없으면 자체 30초 타임아웃만 적용된다.
  * @returns {{ message: string, recommendations: { requestId: string, qty: number, reason: string }[] }}
  */
-export async function fetchGeminiRecommendation({ budget, query, requests }) {
+export async function fetchGeminiRecommendation({ budget, query, requests, signal }) {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
   if (!apiKey) throw new Error('VITE_GEMINI_API_KEY가 설정되지 않았습니다.');
 
   const context = buildContext(requests);
   const prompt = buildPrompt({ budget, query, context });
+
+  const timeoutSignal = AbortSignal.timeout(30000);
+  const combinedSignal = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
 
   const res = await fetch(ENDPOINT, {
     method: 'POST',
@@ -103,6 +130,7 @@ export async function fetchGeminiRecommendation({ budget, query, requests }) {
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: { responseMimeType: 'application/json' },
     }),
+    signal: combinedSignal,
   });
 
   if (import.meta.env.DEV && !res.ok) {

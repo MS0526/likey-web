@@ -30,3 +30,11 @@ html {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+@keyframes chatbot-pulse-ring {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(47, 93, 79, 0.35); }
+  50% { box-shadow: 0 0 0 9px rgba(47, 93, 79, 0); }
+}
+.chatbot-pulse {
+  animation: chatbot-pulse-ring 2.6s ease-in-out infinite;
+}

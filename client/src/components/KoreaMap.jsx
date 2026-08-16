@@ -14,6 +14,8 @@
  *   onMarkerClick (marker) => void       선택
  */
 
+import { useState } from 'react';
+
 export const REGIONS = [
   { id: 'gyeonggi', name: '경기·서울·인천', d: 'M121.1 142.6L117.8 144.7L117.3 141.5L114.2 139.3L115.5 136.4L118.0 135.9L117.5 138.7L120.8 140.4L121.1 142.6Z M115.7 134.8L111.5 135.7L110.2 134.4L111.2 131.4L117.9 131.5L115.7 134.8Z M126.3 178.3L124.6 177.5L125.0 174.5L127.1 173.3L129.1 175.6L126.3 178.3Z M135.9 175.2L138.4 179.5L134.4 178.7L131.8 179.8L133.0 175.8L132.1 173.9L135.9 171.5L133.5 173.9L135.9 175.2Z M134.4 157.0L123.8 162.5L119.7 158.8L124.6 155.8L127.9 155.8L128.9 153.6L133.2 155.0L134.4 157.0Z M136.5 168.8L134.9 159.1L135.8 151.8L130.8 143.8L132.0 147.7L130.0 149.7L121.1 147.3L120.8 145.4L122.9 144.0L118.9 138.3L119.3 132.5L122.2 129.8L124.9 129.3L129.5 133.2L130.6 136.9L129.9 134.6L131.3 134.2L136.0 135.7L139.4 132.7L139.2 128.7L141.2 126.4L140.0 124.8L140.0 119.3L142.7 120.5L144.6 119.6L144.3 117.9L150.1 116.2L150.2 112.9L152.8 114.1L154.1 111.5L154.2 109.6L151.4 107.9L147.9 109.0L144.9 105.2L146.3 103.0L152.9 97.5L154.3 99.0L158.0 98.5L158.8 99.5L160.0 98.4L159.4 96.6L168.0 91.9L168.1 95.9L171.4 96.7L173.2 102.6L175.3 103.7L178.4 100.8L179.5 101.2L179.1 106.2L180.9 106.2L181.6 107.9L188.6 106.3L190.3 114.3L195.6 115.6L195.9 118.2L200.3 120.6L199.5 125.8L194.7 130.0L195.9 135.1L193.5 137.5L197.0 138.3L195.4 144.6L196.8 145.8L199.6 143.9L206.4 149.2L211.8 149.3L215.4 151.8L210.6 155.7L212.5 161.9L209.6 166.9L208.9 179.0L205.0 185.5L201.9 185.1L201.4 188.7L197.3 191.3L197.3 192.6L194.0 191.7L190.3 192.9L190.3 194.7L186.2 196.5L186.7 199.0L180.8 202.1L179.6 204.9L173.9 200.2L168.3 198.6L165.7 201.3L160.7 201.5L155.2 204.0L154.9 202.3L152.3 201.8L147.5 194.0L145.0 194.0L145.6 187.5L148.5 184.2L147.6 182.3L144.8 183.1L141.0 187.1L139.3 183.4L139.5 177.4L140.9 175.3L147.5 176.7L147.6 174.9L149.8 173.2L143.4 172.1L141.3 169.5L144.1 164.6L139.3 168.8L136.5 168.8Z' },
   { id: 'gangwon', name: '강원', d: 'M312.4 184.6L306.5 187.0L303.6 190.5L304.0 192.8L301.6 193.1L295.2 188.3L293.3 190.9L284.1 189.0L282.5 192.8L275.3 189.3L273.2 191.8L273.2 194.1L259.5 189.2L257.9 187.3L252.2 187.4L250.5 186.1L250.7 184.6L246.6 183.7L243.8 185.3L242.0 183.5L246.4 179.1L242.3 179.7L237.9 176.4L236.1 178.8L233.1 178.6L227.6 181.2L226.3 176.7L224.1 175.6L220.0 178.2L221.0 181.2L218.8 184.2L216.9 183.2L211.6 184.8L208.6 179.5L210.2 171.6L209.6 166.9L212.5 161.9L210.6 155.7L215.4 151.8L211.8 149.3L206.4 149.2L199.6 143.9L196.8 145.8L195.4 144.6L197.0 138.3L193.5 137.5L195.9 135.1L194.7 130.0L199.5 125.8L200.3 120.6L195.9 118.2L195.6 115.6L190.3 114.3L188.6 106.3L181.6 107.9L180.9 106.2L179.1 106.2L179.5 101.2L178.4 100.8L175.3 103.7L173.2 102.6L171.4 96.7L168.1 95.9L168.0 91.9L171.2 88.4L172.7 89.8L176.6 88.0L180.9 89.8L185.8 87.9L193.6 90.9L198.7 87.9L201.9 88.8L210.8 86.8L212.4 89.1L217.6 87.6L229.1 90.1L238.9 84.5L243.1 80.2L245.0 67.3L247.5 65.5L260.3 90.0L264.1 103.3L281.4 129.5L292.7 141.9L291.9 144.6L296.6 150.0L296.9 154.5L312.0 177.5L310.9 180.8L312.4 184.6Z' },
@@ -60,6 +62,47 @@ const THEMES = {
   },
 };
 
+const VIEW_W = 420;
+const VIEW_H = 560;
+
+/** 마커 위에 뜨는 SVG 툴팁. 화면 밖으로 나가지 않게 좌우/상하 위치를 보정한다. */
+function MarkerTooltip({ marker }) {
+  const label = marker.name;
+  const sub = marker.type ?? marker.region ?? '';
+
+  const textWidth = Math.max(label.length * 7.4, sub.length * 6.4);
+  const width = Math.min(180, Math.max(64, textWidth + 20));
+  const height = sub ? 38 : 24;
+  const gap = 10;
+
+  let x = marker.x - width / 2;
+  x = Math.max(4, Math.min(x, VIEW_W - width - 4));
+
+  let y = marker.y - gap - height;
+  if (y < 4) y = marker.y + gap;
+
+  return (
+    <g pointerEvents="none">
+      <rect x={x} y={y} width={width} height={height} rx={6} fill="rgba(20,20,20,0.88)" />
+      <text
+        x={x + width / 2}
+        y={y + (sub ? 16 : 15)}
+        textAnchor="middle"
+        fontSize="9"
+        fontWeight="700"
+        fill="#fff"
+      >
+        {label}
+      </text>
+      {sub && (
+        <text x={x + width / 2} y={y + 29} textAnchor="middle" fontSize="7.5" fill="#E5E5E5">
+          {sub}
+        </text>
+      )}
+    </g>
+  );
+}
+
 export default function KoreaMap({
   markers = [],
   regionCounts = {},
@@ -69,13 +112,16 @@ export default function KoreaMap({
 }) {
   const t = THEMES[theme] ?? THEMES.dark;
   const max = Math.max(1, ...Object.values(regionCounts));
+  const [hoveredId, setHoveredId] = useState(null);
+  const hoveredMarker = markers.find((m, i) => (m.id ?? i) === hoveredId);
 
   return (
     <svg
-      viewBox="0 0 420 560"
+      viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
       role="img"
       aria-label="대한민국 기관 분포 지도"
       style={{ width: '100%', height: 'auto', display: 'block', overflow: 'visible' }}
+      onTouchStart={() => setHoveredId(null)}
     >
       {REGIONS.map((r) => {
         const count = regionCounts[r.id] ?? 0;
@@ -102,20 +148,30 @@ export default function KoreaMap({
         );
       })}
 
-      {markers.map((m, i) => (
-        <g
-          key={m.id ?? i}
-          onClick={onMarkerClick ? () => onMarkerClick(m) : undefined}
-          style={{ cursor: onMarkerClick ? 'pointer' : 'default' }}
-        >
-          <circle cx={m.x} cy={m.y} r="7" fill={t.ring}>
-            <animate attributeName="r" values="5;15;5" dur="2.8s" begin={i * 0.35 + 's'} repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.75;0;0.75" dur="2.8s" begin={i * 0.35 + 's'} repeatCount="indefinite" />
-          </circle>
-          <circle cx={m.x} cy={m.y} r="5" fill={t.marker} stroke={t.bg} strokeWidth="1.2" />
-          <title>{m.name}</title>
-        </g>
-      ))}
+      {markers.map((m, i) => {
+        const markerId = m.id ?? i;
+        return (
+          <g
+            key={markerId}
+            onClick={onMarkerClick ? () => onMarkerClick(m) : undefined}
+            onMouseEnter={() => setHoveredId(markerId)}
+            onMouseLeave={() => setHoveredId((cur) => (cur === markerId ? null : cur))}
+            onTouchStart={(e) => {
+              e.stopPropagation();
+              setHoveredId(markerId);
+            }}
+            style={{ cursor: onMarkerClick ? 'pointer' : 'default' }}
+          >
+            <circle cx={m.x} cy={m.y} r="7" fill={t.ring}>
+              <animate attributeName="r" values="5;15;5" dur="2.8s" begin={i * 0.35 + 's'} repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.75;0;0.75" dur="2.8s" begin={i * 0.35 + 's'} repeatCount="indefinite" />
+            </circle>
+            <circle cx={m.x} cy={m.y} r="5" fill={t.marker} stroke={t.bg} strokeWidth="1.2" />
+          </g>
+        );
+      })}
+
+      {hoveredMarker && <MarkerTooltip marker={hoveredMarker} />}
     </svg>
   );
 }

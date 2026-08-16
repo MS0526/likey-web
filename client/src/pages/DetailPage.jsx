@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Image as ImageIcon, Check, ShoppingCart } from 'lucide-react';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { ArrowLeft, Image as ImageIcon, Check, ShoppingCart, Sparkles, ArrowRight } from 'lucide-react';
 import ProgressBar from '../components/ProgressBar';
 import { getItemById, getCategoryLabel } from '../data/items';
 import { getOrganizationById } from '../data/organizations';
@@ -11,10 +11,18 @@ import { progressOf, formatWon } from '../utils/urgency';
 export default function DetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { getRequestsByItem, createDonation } = useDonation();
   const { addToCart } = useCart();
 
   const item = getItemById(id);
+
+  // AI 추천에서 "이대로 후원 시작하기"로 넘어온 경우, 추천받은 물품 전체를 순서대로 후원할 수 있게 하는 대기열
+  const queueIds = (searchParams.get('queue') ?? '').split(',').filter(Boolean);
+  const queueQtys = (searchParams.get('qty') ?? '').split(',').filter(Boolean).map(Number);
+  const queueIndex = queueIds.indexOf(id);
+  const inQueue = queueIndex !== -1;
+  const hasNextInQueue = inQueue && queueIndex + 1 < queueIds.length;
 
   // 이 물품을 요청한 기관 목록 — 긴급 기관을 먼저, 그 안에서는 가까운 순으로 정렬
   const reqs = getRequestsByItem(id)
@@ -24,11 +32,21 @@ export default function DetailPage() {
       return urgentDiff !== 0 ? urgentDiff : a.org.distanceKm - b.org.distanceKm;
     });
 
-  const [orgId, setOrgId] = useState(reqs[0]?.orgId ?? '');
+  const [orgId, setOrgId] = useState('');
   const [qty, setQty] = useState(1);
   const [done, setDone] = useState(false);
   const [added, setAdded] = useState(false);
   const [revealDonor, setRevealDonor] = useState(true);
+
+  // 물품이 바뀔 때(대기열의 다음 물품으로 이동 포함) 선택 상태를 새 물품 기준으로 초기화한다.
+  // queue의 qty가 있으면 수량 선택기 초기값으로 사용한다.
+  useEffect(() => {
+    setOrgId(reqs[0]?.orgId ?? '');
+    setDone(false);
+    setAdded(false);
+    const queuedQty = queueQtys[queueIndex];
+    setQty(Number.isFinite(queuedQty) && queuedQty > 0 ? queuedQty : 1);
+  }, [id]);
 
   const picked = reqs.find((r) => r.orgId === orgId);
   // 남은 수량 = 필요 수량 - 이미 받은 수량 - 수락 대기 중인 수량
@@ -43,6 +61,11 @@ export default function DetailPage() {
     return <p className="p-8 text-sm text-subtle">존재하지 않는 물품입니다.</p>;
   }
 
+  const goToNextQueueItem = () => {
+    const nextId = queueIds[queueIndex + 1];
+    navigate(`/items/${nextId}?${searchParams.toString()}`);
+  };
+
   const handleDonate = () => {
     if (!picked || remain === 0) return;
     createDonation({
@@ -53,14 +76,21 @@ export default function DetailPage() {
       anonymous: !revealDonor,
     });
     setDone(true);
-    setTimeout(() => navigate('/market'), 1600);
+    if (!hasNextInQueue) {
+      setTimeout(() => navigate('/market'), 1600);
+    }
   };
 
   const handleAddToCart = () => {
     if (!picked || remain === 0) return;
     addToCart({ itemId: item.id, orgId, qty: Math.min(qty, remain) });
     setAdded(true);
-    setTimeout(() => setAdded(false), 1600);
+    if (hasNextInQueue) return; // 다음 추천 물품 버튼을 누를 때까지 배너를 유지한다
+    if (inQueue) {
+      setTimeout(() => navigate('/market'), 1600);
+    } else {
+      setTimeout(() => setAdded(false), 1600);
+    }
   };
 
   return (
@@ -70,17 +100,52 @@ export default function DetailPage() {
         <span className="text-sm text-ink">물품 상세</span>
       </header>
 
+      {inQueue && !done && !added && (
+        <div className="flex items-center justify-center gap-2 bg-accent-soft px-4 py-2.5 text-sm text-accent-ink">
+          <Sparkles size={14} />
+          AI 추천 후원 진행 중 ({queueIndex + 1}/{queueIds.length})
+        </div>
+      )}
+
       {done && (
-        <div className="flex items-center justify-center gap-2 bg-brand px-4 py-3 text-sm text-white">
-          <Check size={15} />
-          결제 완료. {picked.org.name}의 수락을 기다립니다.
+        <div className="flex flex-col items-center gap-3 bg-brand px-4 py-4 text-sm text-white">
+          <div className="flex items-center gap-2">
+            <Check size={15} />
+            결제 완료. {picked.org.name}의 수락을 기다립니다.
+          </div>
+          {inQueue && (
+            hasNextInQueue ? (
+              <button
+                onClick={goToNextQueueItem}
+                className="flex w-full max-w-xs items-center justify-center gap-1.5 rounded-lg bg-white px-5 py-3 text-sm text-brand"
+              >
+                다음 추천 물품 후원하기 ({queueIndex + 2}/{queueIds.length}) <ArrowRight size={15} />
+              </button>
+            ) : (
+              <p className="text-xs text-white/90">추천 물품을 모두 후원했어요!</p>
+            )
+          )}
         </div>
       )}
 
       {added && !done && (
-        <div className="flex items-center justify-center gap-2 bg-ink px-4 py-3 text-sm text-white">
-          <ShoppingCart size={15} />
-          장바구니에 담았습니다.
+        <div className="flex flex-col items-center gap-3 bg-ink px-4 py-4 text-sm text-white">
+          <div className="flex items-center gap-2">
+            <ShoppingCart size={15} />
+            장바구니에 담았습니다.
+          </div>
+          {inQueue && (
+            hasNextInQueue ? (
+              <button
+                onClick={goToNextQueueItem}
+                className="flex w-full max-w-xs items-center justify-center gap-1.5 rounded-lg bg-white px-5 py-3 text-sm text-ink"
+              >
+                다음 추천 물품 후원하기 ({queueIndex + 2}/{queueIds.length}) <ArrowRight size={15} />
+              </button>
+            ) : (
+              <p className="text-xs text-white/90">추천 물품을 모두 후원했어요!</p>
+            )
+          )}
         </div>
       )}
 

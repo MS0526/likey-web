@@ -6,7 +6,6 @@ import { DonationProvider } from './contexts/DonationContext';
 import { CartProvider } from './contexts/CartContext';
 
 import HomePage from './pages/HomePage';
-import AboutPage from './pages/AboutPage';
 import AuthSelectPage from './pages/AuthSelectPage';
 import LoginPage from './pages/LoginPage';
 import MarketPage from './pages/MarketPage';
@@ -24,7 +23,6 @@ function App() {
             {import.meta.env.DEV && <DevNav />}
             <Routes>
               <Route path="/" element={<HomePage />} />
-              <Route path="/about" element={<AboutPage />} />
               <Route path="/auth" element={<AuthSelectPage />} />
               <Route path="/login/:role" element={<LoginPage />} />
               <Route

@@ -9,7 +9,7 @@ export default function OrgHeader({ organization }) {
   return (
     <header className="flex items-center justify-between bg-white px-6 py-3">
       <div className="flex items-center gap-4">
-        <Link to="/about" className="text-subtle">
+        <Link to="/" className="text-subtle">
           <ArrowLeft size={18} />
         </Link>
         <Link to="/" className="flex items-center gap-2">
