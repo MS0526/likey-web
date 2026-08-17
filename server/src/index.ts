@@ -9,18 +9,20 @@ const app = express();
 // Render, Railway 등 배포 환경에서 주입해주는 동적 PORT 사용 (기본값 5000)
 const PORT = process.env.PORT || 5000;
 
-// 1. CORS 설정 (로컬 5173/5174 및 Vercel 배포 주소 허용)
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:5174',
-  'https://likey-web.vercel.app',
-];
+// 1. CORS 설정 (로컬 개발 서버 및 Vercel 배포 주소 허용)
+const allowedOrigins = ['https://likey-web.vercel.app'];
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // origin이 없거나(Postman/서버간 요청), 허용 목록에 있거나, vercel 서브도메인일 경우 허용
-      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      // origin이 없거나(Postman/서버간 요청), 허용 목록에 있거나, vercel 서브도메인이거나,
+      // 로컬 개발 서버(포트 무관 — Vite가 5173이 사용 중이면 5174, 5175...로 올라가므로)일 경우 허용
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('.vercel.app') ||
+        /^http:\/\/localhost:\d+$/.test(origin)
+      ) {
         callback(null, true);
       } else {
         callback(new Error('CORS 정책에 의해 차단된 요청입니다.'));
