@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Package, CheckCircle2, BarChart3, Camera, Plus, X } from 'lucide-react';
+import { Package, CheckCircle2, BarChart3, Camera, TrendingUp, Plus, X } from 'lucide-react';
 import OrgHeader from '../components/OrgHeader';
 import MetricCard from '../components/MetricCard';
 import TabNav from '../components/TabNav';
@@ -7,9 +7,11 @@ import RequestRow from '../components/RequestRow';
 import ApprovalRow from '../components/ApprovalRow';
 import UsageTable from '../components/UsageTable';
 import ProofCard from '../components/ProofCard';
+import CategoryBarChart from '../components/CategoryBarChart';
 import { organizations } from '../data/organizations';
-import { items } from '../data/items';
+import { items, getCategoryLabel } from '../data/items';
 import { useDonation } from '../contexts/DonationContext';
+import { categoryBreakdown, recommendNextRequests } from '../utils/orgAnalytics';
 
 const DAILY_URGENT_LIMIT = 3;
 
@@ -23,6 +25,8 @@ export default function OrgPage() {
   const [newUrgentReason, setNewUrgentReason] = useState('');
 
   const {
+    donations,
+    requests,
     getDonationsByOrg,
     getRequestsByOrg,
     approve,
@@ -43,8 +47,11 @@ export default function OrgPage() {
   const todayUrgentCount = countTodayUrgent(org.id);
   const urgentLimitReached = todayUrgentCount >= DAILY_URGENT_LIMIT;
 
-  const openRequestModal = () => {
-    setNewItemId(items[0]?.id ?? '');
+  const categoryData = categoryBreakdown(mine, items);
+  const nextRequestPicks = recommendNextRequests(org.id, { requests, donations }, items);
+
+  const openRequestModal = (presetItemId) => {
+    setNewItemId(presetItemId ?? items[0]?.id ?? '');
     setNewNeededQty(10);
     setNewIsUrgent(false);
     setNewUrgentReason('');
@@ -70,6 +77,7 @@ export default function OrgPage() {
     { key: 'approve', label: '물품 수락', Icon: CheckCircle2, badge: pending.length },
     { key: 'usage', label: '사용 현황', Icon: BarChart3 },
     { key: 'proof', label: '후원 인증', Icon: Camera, badge: unpublishedProofs },
+    { key: 'analytics', label: '데이터 분석', Icon: TrendingUp },
   ];
 
   return (
@@ -96,7 +104,7 @@ export default function OrgPage() {
             <div className="flex items-center justify-between">
               <h2 className="text-lg text-ink">필요한 물품 요청</h2>
               <button
-                onClick={openRequestModal}
+                onClick={() => openRequestModal()}
                 className="flex items-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm text-white"
               >
                 <Plus size={14} /> 물품 추가 요청
@@ -159,6 +167,43 @@ export default function OrgPage() {
                 <p className="mt-3 text-sm text-ink">준비된 인증이 없습니다</p>
               </div>
             )}
+          </section>
+        )}
+
+        {tab === 'analytics' && (
+          <section className="mt-6">
+            <h2 className="text-lg text-ink">카테고리별 후원 현황</h2>
+            <p className="mt-1.5 text-sm text-subtle">
+              지금까지 후원받은(대기·배송중 포함) 물품을 카테고리별로 모아봤어요.
+            </p>
+            <div className="mt-4">
+              <CategoryBarChart data={categoryData} />
+            </div>
+
+            <h2 className="mt-8 text-lg text-ink">다음에 요청하면 좋을 물품</h2>
+            <p className="mt-1.5 text-sm text-subtle">
+              지금까지의 요청·후원 이력과 다른 기관들의 최근 요청 추이를 함께 봐서 추천해요.
+            </p>
+            <div className="mt-4 flex flex-col gap-3">
+              {nextRequestPicks.map(({ item, reason }) => (
+                <div
+                  key={item.id}
+                  className="flex items-center gap-3 rounded-xl border border-hairline bg-white p-4"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-subtle">{getCategoryLabel(item.category)}</p>
+                    <p className="mt-0.5 text-sm text-ink">{item.name}</p>
+                    <p className="mt-1 text-xs text-accent-ink">{reason}</p>
+                  </div>
+                  <button
+                    onClick={() => openRequestModal(item.id)}
+                    className="shrink-0 rounded-lg border border-brand px-3.5 py-2 text-xs text-brand transition hover:bg-brand hover:text-white"
+                  >
+                    요청하기
+                  </button>
+                </div>
+              ))}
+            </div>
           </section>
         )}
       </div>
