@@ -10,8 +10,12 @@ export default function RecommendCard({ pick, to }) {
       to={to}
       className="flex items-center gap-3 rounded-xl border border-hairline bg-white p-3 transition hover:border-brand"
     >
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-brand-soft">
-        <Package size={20} className="text-brand opacity-50" />
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-brand-soft">
+        {item.image ? (
+          <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+        ) : (
+          <Package size={20} className="text-brand opacity-50" />
+        )}
       </div>
 
       <div className="min-w-0 flex-1">
