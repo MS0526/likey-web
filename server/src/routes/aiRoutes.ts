@@ -9,7 +9,11 @@ const OPENAI_TIMEOUT_MS = 25_000;
 
 let openai: OpenAI | null = null;
 if (process.env.OPENAI_API_KEY) {
-  openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: OPENAI_TIMEOUT_MS });
+  // SDK 기본 재시도(2회)는 429의 Retry-After 값을 그대로 백오프에 반영한다. 실제로
+  // 겪어보니 일일 요청 한도 초과(리셋까지 28분+) 상황에서 그 대기를 기다리다 우리
+  // 쪽 25초 타임아웃이 먼저 터져버려, 진짜 원인(rate limit)이 아니라 timeout으로
+  // 오인 처리됐다. 재시도를 꺼서 첫 시도의 실제 에러(429 등)를 즉시 받게 한다.
+  openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: OPENAI_TIMEOUT_MS, maxRetries: 0 });
 }
 
 class UpstreamTimeoutError extends Error {}
@@ -40,7 +44,8 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 async function respondWithCompletion(
   res: Response,
   systemPrompt: string,
-  userMessage: string
+  userMessage: string,
+  temperature = 0.2
 ) {
   if (!openai) {
     return res.status(503).json({
@@ -59,7 +64,7 @@ async function respondWithCompletion(
           { role: 'user', content: userMessage },
         ],
         response_format: { type: 'json_object' },
-        temperature: 0.2,
+        temperature,
       }),
       OPENAI_TIMEOUT_MS
     );
@@ -70,6 +75,18 @@ async function respondWithCompletion(
 
     return res.status(200).json(result);
   } catch (error) {
+    if (error instanceof OpenAI.RateLimitError) {
+      // SDK가 429를 즉시 던지지 않고 내부 재시도를 거치는 경우가 있어, 이 분기가 없으면
+      // 위 UpstreamTimeoutError로 오인해 25초를 그냥 흘려보내게 된다. 원인이 명확한
+      // 만큼(쿼터 소진) 바로 알려준다.
+      console.error('AI Recommend Rate Limit:', error.message);
+      return res.status(429).json({
+        success: false,
+        code: 'rate_limit_exceeded',
+        message: 'AI 추천 요청 한도를 초과했습니다. 잠시 후 다시 시도해 주세요.',
+      });
+    }
+
     if (error instanceof OpenAI.APIConnectionTimeoutError || error instanceof UpstreamTimeoutError) {
       console.error(`AI Recommend Timeout: OpenAI가 ${OPENAI_TIMEOUT_MS}ms 안에 응답하지 않았습니다.`, error);
       return res.status(504).json({
@@ -168,13 +185,18 @@ ${JSON.stringify(candidates, null, 2)}
 [엄격한 제약조건]
 1. 반드시 위 [추천 후보 물품 목록]에 있는 itemId만 사용해. 목록에 없는 itemId를 지어내면 안 돼.
 2. 이 목록에 있는 후보는 전부 최소 하나의 근거(isNewCategory 또는 popularityRank)를 갖고 있어. 그중에서 최대 3개를 골라 추천해 — 후보가 3개보다 적으면 있는 만큼만 추천하고, 억지로 3개를 채우지 마.
-3. 이유는 반드시 그 물품 자신의 필드 값만 그대로 옮겨서 써 — 다른 물품이나 다른 카테고리 얘기를 섞지 마.
-   - isNewCategory가 true면 "이 카테고리의 요청이 없었습니다" 같은 취지로 써.
-   - popularityRank가 숫자면(null이 아니면) 그 숫자를 "N위"로 정확히 인용해서 "인기 물품"이라고 써. popularityRank가 null이면 절대 "인기 물품"이라는 표현을 쓰지 마.
-   - 두 조건이 다 해당되면 두 이유를 같이 써도 좋아.
-4. 문장은 반드시 "-습니다/-입니다"로 끝나는 완전한 존댓말 문장으로 써. "-다", "-음", "-됨"처럼 끊어 쓰는 개조식 말투는 쓰지 마.
-   예) "이 카테고리 요청이 없었다" (X) → "이 카테고리의 요청이 없었습니다" (O)
-5. 같은 문장을 여러 추천에 복사해서 쓰지 마 — 물품마다 필드 값이 다르면 이유 문장도 달라야 해.
+3. 이유는 그 물품 자신의 필드 값에만 근거해야 해 — 다른 물품이나 다른 카테고리 얘기를 섞지 마. 다만 표현은 아래 예시처럼 **매번 다르고 자연스럽게** 써. 똑같은 문장 틀을 기계적으로 반복하지 마(예: "OO의 요청이 없었습니다"만 계속 반복하는 건 안 됨).
+   - isNewCategory가 true일 때 쓸 수 있는 표현 예시(그대로 베끼지 말고 이런 결로 매번 다르게):
+     "그동안 이 기관은 [카테고리] 물품을 한 번도 받아보신 적이 없으시더라고요."
+     "지금까지 [카테고리] 쪽은 요청이 비어 있어서, 새로운 영역을 채워보시면 좋을 것 같아요."
+     "[물품명]은 이 기관에 아직 없는 [카테고리] 카테고리라 아이들에게 새로운 도움이 될 수 있어요."
+   - popularityRank가 숫자일 때(null이면 절대 "인기"라는 말을 쓰면 안 돼) 쓸 수 있는 표현 예시:
+     "전체 기관 중 실제로 가장 많이 후원받은 물품 [N]위에 오른 물품이에요."
+     "다른 기관들 사이에서도 꾸준히 인기가 많은 물품이라, 후원이 잘 모일 가능성이 커요(전체 [N]위)."
+   - 두 조건이 다 해당되면 자연스럽게 한 문장으로 엮어서 써도 좋아.
+   - popularityRank가 숫자일 땐 그 숫자를 반드시 정확히 인용해(지어내지 마).
+4. 문장은 반드시 "-습니다/-입니다/-어요/-예요"처럼 완전한 존댓말 문장으로 써. "-다", "-음", "-됨"처럼 끊어 쓰는 개조식 말투는 쓰지 마.
+5. 같은 문장 구조를 여러 추천에 복사해서 쓰지 마 — 세 개를 추천한다면 세 문장이 서로 표현·어순·길이가 눈에 띄게 달라야 해.
 6. 후보 목록이 비어있거나 추천할 만한 후보가 없으면 recommendations를 빈 배열로 반환해.
 
 [응답 포맷]
@@ -192,7 +214,9 @@ ${JSON.stringify(candidates, null, 2)}
 
   const userMessage = '지금까지의 요청·후원 이력과 전체 인기 물품 데이터를 바탕으로, 다음에 요청하면 좋을 물품을 추천해줘.';
 
-  return respondWithCompletion(res, systemPrompt, userMessage);
+  // 추천 대상(itemId)은 candidates로 이미 제한돼 있어 온도를 올려도 사실관계가 흔들리지
+  // 않음 — 대신 이유 문장이 매번 똑같은 틀로 나오는 걸 줄이려고 기본값(0.2)보다 높게 둠.
+  return respondWithCompletion(res, systemPrompt, userMessage, 0.9);
 });
 
 export default router;
