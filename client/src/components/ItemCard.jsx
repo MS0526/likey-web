@@ -17,8 +17,12 @@ export default function ItemCard({ item }) {
       to={`/items/${item.id}`}
       className="block overflow-hidden rounded-xl border border-hairline bg-white transition hover:border-brand"
     >
-      <div className="relative flex h-40 items-center justify-center bg-brand-soft">
-        <ImageIcon size={30} className="text-brand opacity-40" />
+      <div className="relative flex h-40 items-center justify-center overflow-hidden bg-brand-soft">
+        {item.image ? (
+          <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+        ) : (
+          <ImageIcon size={30} className="text-brand opacity-40" />
+        )}
         <span className={`absolute right-3 top-3 rounded-full px-2.5 py-1 text-xs ${URGENCY_STYLE[urgency.key]}`}>
           {urgency.label}
         </span>

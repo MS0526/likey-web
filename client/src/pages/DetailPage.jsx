@@ -150,8 +150,12 @@ export default function DetailPage() {
       )}
 
       <div className="grid gap-8 px-6 py-8 md:grid-cols-2">
-        <div className="flex h-72 items-center justify-center rounded-xl bg-brand-soft">
-          <ImageIcon size={52} className="text-brand opacity-40" />
+        <div className="flex h-72 items-center justify-center overflow-hidden rounded-xl bg-brand-soft">
+          {item.image ? (
+            <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+          ) : (
+            <ImageIcon size={52} className="text-brand opacity-40" />
+          )}
         </div>
 
         <div>
