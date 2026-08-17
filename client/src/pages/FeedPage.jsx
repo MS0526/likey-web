@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Camera } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Camera, Gift } from 'lucide-react';
 import Header from '../components/Header';
 import MetricCard from '../components/MetricCard';
 import CategoryBarChart from '../components/CategoryBarChart';
@@ -26,27 +27,37 @@ export default function FeedPage() {
     <div className="min-h-screen bg-cream">
       <Header query={query} onQueryChange={setQuery} orgCount={organizations.length} />
 
-      {myDonations.length > 0 && (
-        <div className="px-6 pt-10">
-          <div className="mx-auto max-w-5xl">
-            <h2 className="text-lg text-ink">내 후원 활동</h2>
-            <p className="mt-1.5 text-sm text-subtle">지금까지 내가 후원한 내역을 모아봤어요.</p>
+      <div className="px-6 pt-10">
+        <div className="mx-auto max-w-5xl">
+          <h2 className="text-lg text-ink">내 후원 활동</h2>
+          <p className="mt-1.5 text-sm text-subtle">지금까지 내가 후원한 내역을 모아봤어요.</p>
 
-            <div className="mt-4 grid gap-3 md:grid-cols-4">
-              <MetricCard value={myDonations.length} unit="건" label="총 후원 건수" />
-              <MetricCard value={myOrgCount} unit="개" label="도운 기관 수" accent />
-              <MetricCard value={myItemTypeCount} unit="종" label="후원한 물품 종류" />
-              <MetricCard value={`₩${Math.round(totalAmount(myDonations) / 1000)}`} unit="K" label="총 후원액" />
-            </div>
+          {myDonations.length > 0 ? (
+            <>
+              <div className="mt-4 grid gap-3 md:grid-cols-4">
+                <MetricCard value={myDonations.length} unit="건" label="총 후원 건수" />
+                <MetricCard value={myOrgCount} unit="개" label="도운 기관 수" accent />
+                <MetricCard value={myItemTypeCount} unit="종" label="후원한 물품 종류" />
+                <MetricCard value={`₩${Math.round(totalAmount(myDonations) / 1000)}`} unit="K" label="총 후원액" />
+              </div>
 
-            <div className="mt-4">
-              <CategoryBarChart data={myCategoryData} />
+              <div className="mt-4">
+                <CategoryBarChart data={myCategoryData} />
+              </div>
+            </>
+          ) : (
+            <div className="mt-4 rounded-xl border border-hairline bg-white py-16 text-center">
+              <Gift size={28} className="mx-auto text-brand opacity-40" />
+              <p className="mt-3 text-sm text-ink">아직 후원 내역이 없어요</p>
+              <Link to="/market" className="mt-3 inline-block text-sm text-brand">
+                마켓에서 후원할 물품 둘러보기
+              </Link>
             </div>
-          </div>
+          )}
         </div>
-      )}
+      </div>
 
-      <div className={`px-6 py-10 ${myDonations.length > 0 ? 'mt-6 border-t border-hairline' : ''}`}>
+      <div className="mt-6 border-t border-hairline px-6 py-10">
         <h1 className="text-center text-2xl text-ink">후원 인증</h1>
 
         {proofs.length === 0 ? (
