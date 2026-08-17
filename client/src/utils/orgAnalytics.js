@@ -1,3 +1,4 @@
+import { api } from '../lib/api';
 import { getCategoryLabel } from '../data/items';
 
 const CATEGORY_ORDER = ['food', 'goods', 'toy', 'clothing', 'medicine', 'edu'];
@@ -71,4 +72,80 @@ export function recommendNextRequests(orgId, { requests, donations }, items, max
     })
     .sort((a, b) => b.score - a.score)
     .slice(0, maxPicks);
+}
+
+/** 전체 플랫폼에서 실제로 많이 후원(수령)된 물품별 순위(1위부터) — status와 무관하게 receivedQty를 합산한다. */
+function popularityRanks(requests) {
+  const totals = new Map();
+  requests.forEach((r) => {
+    totals.set(r.itemId, (totals.get(r.itemId) ?? 0) + r.receivedQty);
+  });
+
+  const ranks = new Map();
+  [...totals.entries()]
+    .filter(([, total]) => total > 0)
+    .sort((a, b) => b[1] - a[1])
+    .forEach(([itemId], i) => ranks.set(itemId, i + 1));
+
+  return ranks;
+}
+
+/**
+ * AI에게 보낼 추천 후보 목록을 만든다. 이 기관이 이미 열어둔(open) 요청 물품은 제외하고,
+ * 후보마다 isNewCategory·popularityRank를 미리 계산해 물품 객체 안에 직접 붙여준다.
+ * AI가 "이 카테고리 요청이 없었나?", "몇 위인가?"를 서로 다른 배열을 대조해가며 스스로
+ * 계산하게 하면 실제로 틀리는 경우가 많아서(카테고리 착각, 순위 뒤바뀜 등), 각 후보 안에
+ * 정답을 미리 박아두고 AI는 그 값을 그대로 문장으로 옮기기만 하면 되게 만든다.
+ */
+function buildCandidates(orgId, { requests, donations }, items) {
+  const openItemIds = new Set(
+    requests.filter((r) => r.orgId === orgId && r.status === 'open').map((r) => r.itemId)
+  );
+  const touched = touchedCategories(orgId, requests, donations, items);
+  const ranks = popularityRanks(requests);
+
+  return items
+    .filter((item) => !openItemIds.has(item.id))
+    .map((item) => ({
+      itemId: item.id,
+      name: item.name,
+      category: getCategoryLabel(item.category),
+      isNewCategory: !touched.has(item.category), // true면 이 기관이 이 카테고리를 접해본 적 없음
+      popularityRank: ranks.get(item.id) ?? null, // 전체 플랫폼 인기 순위(1위=가장 많이 후원됨), 없으면 순위권 밖
+    }));
+}
+
+/**
+ * 기관의 "다음 요청 추천"을 AI(OpenAI)로 받아온다. 이미 계산된 후보 목록(candidates)을
+ * 백엔드로 보내 AI가 그중 최대 3개를 고르고 이유를 문장으로 써주게 한다. 백엔드 호출이
+ * 실패하거나(키 미설정, 타임아웃 등) 빈 추천이 오면 규칙 기반 recommendNextRequests로
+ * 폴백한다 — fetchRecommendation(recommend.js)과 동일한 폴백 패턴.
+ *
+ * @returns { message, picks: { item, reason }[], source: 'ai' | 'local' }
+ */
+export async function fetchNextRequestRecommendation(orgId, { requests, donations }, items, maxPicks = 3) {
+  try {
+    const res = await api.post('/api/ai/org-recommend', {
+      candidates: buildCandidates(orgId, { requests, donations }, items),
+    });
+    const data = res.data;
+    if (data?.recommendations?.length) {
+      const picks = data.recommendations
+        .map(({ itemId, reason }) => {
+          const item = items.find((i) => i.id === itemId);
+          return item ? { item, reason: reason ?? '' } : null;
+        })
+        .filter(Boolean)
+        .slice(0, maxPicks);
+
+      if (picks.length > 0) {
+        return { message: data.message ?? '', picks, source: 'ai' };
+      }
+    }
+  } catch {
+    // 백엔드 미기동·타임아웃·키 미설정 등 → 로컬 규칙 기반으로 폴백
+  }
+
+  const localPicks = recommendNextRequests(orgId, { requests, donations }, items, maxPicks);
+  return { message: '', picks: localPicks, source: 'local' };
 }

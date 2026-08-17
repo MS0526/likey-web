@@ -36,8 +36,12 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   });
 }
 
-// POST /api/ai/recommend
-router.post('/recommend', async (req: Request, res: Response) => {
+/** system/user 프롬프트로 OpenAI를 호출해 JSON을 파싱해 응답한다. 두 추천 라우트가 공유한다. */
+async function respondWithCompletion(
+  res: Response,
+  systemPrompt: string,
+  userMessage: string
+) {
   if (!openai) {
     return res.status(503).json({
       success: false,
@@ -47,9 +51,49 @@ router.post('/recommend', async (req: Request, res: Response) => {
   }
 
   try {
-    const { budget, prompt, requests } = req.body;
+    const completion = await withTimeout(
+      openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage },
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.2,
+      }),
+      OPENAI_TIMEOUT_MS
+    );
 
-    const systemPrompt = `
+    // 옵셔널 체이닝(?. )을 사용해 undefined 에러 방지
+    const content = completion.choices[0]?.message?.content;
+    const result = content ? JSON.parse(content) : {};
+
+    return res.status(200).json(result);
+  } catch (error) {
+    if (error instanceof OpenAI.APIConnectionTimeoutError || error instanceof UpstreamTimeoutError) {
+      console.error(`AI Recommend Timeout: OpenAI가 ${OPENAI_TIMEOUT_MS}ms 안에 응답하지 않았습니다.`, error);
+      return res.status(504).json({
+        success: false,
+        code: 'upstream_timeout',
+        message: 'AI 응답이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.',
+      });
+    }
+
+    console.error('AI Recommend Error:', error);
+    const err = error as { code?: string };
+    return res.status(500).json({
+      success: false,
+      code: err?.code ?? 'unknown',
+      message: '추천을 생성하지 못했습니다',
+    });
+  }
+}
+
+// POST /api/ai/recommend
+router.post('/recommend', async (req: Request, res: Response) => {
+  const { budget, prompt, requests } = req.body;
+
+  const systemPrompt = `
 너는 기부/후원 물품 추천 AI 도우미야.
 사용자의 예산(${budget}원)과 요청사항("${prompt || '가장 필요한 물품 추천'}")을 바탕으로 기부 물품을 추천해줘.
 
@@ -99,47 +143,53 @@ ${JSON.stringify(requests, null, 2)}
 }
 `;
 
-    const completion = await withTimeout(
-      openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          {
-            role: 'user',
-            content: prompt
-              ? `"${prompt}" — 이 요청에 맞게, 예산 ${budget}원 안에서 물품을 추천해줘.`
-              : `예산 ${budget}원으로 가장 필요한 물품을 추천해줘.`,
-          },
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.2,
-      }),
-      OPENAI_TIMEOUT_MS
-    );
+  const userMessage = prompt
+    ? `"${prompt}" — 이 요청에 맞게, 예산 ${budget}원 안에서 물품을 추천해줘.`
+    : `예산 ${budget}원으로 가장 필요한 물품을 추천해줘.`;
 
-    // 옵셔널 체이닝(?. )을 사용해 undefined 에러 방지
-    const content = completion.choices[0]?.message?.content;
-    const result = content ? JSON.parse(content) : {};
+  return respondWithCompletion(res, systemPrompt, userMessage);
+});
 
-    return res.status(200).json(result);
-  } catch (error) {
-    if (error instanceof OpenAI.APIConnectionTimeoutError || error instanceof UpstreamTimeoutError) {
-      console.error(`AI Recommend Timeout: OpenAI가 ${OPENAI_TIMEOUT_MS}ms 안에 응답하지 않았습니다.`, error);
-      return res.status(504).json({
-        success: false,
-        code: 'upstream_timeout',
-        message: 'AI 응답이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.',
-      });
+// POST /api/ai/org-recommend
+router.post('/org-recommend', async (req: Request, res: Response) => {
+  const { candidates } = req.body;
+
+  const systemPrompt = `
+너는 아동·청소년 후원 플랫폼 라이키에서, 기관에게 "다음에 어떤 물품을 요청하면 좋을지" 추천하는 AI 도우미야.
+
+[추천 후보 물품 목록]
+${JSON.stringify(candidates, null, 2)}
+
+각 후보에는 이미 계산이 끝난 필드가 붙어 있어:
+- isNewCategory: true면 이 기관이 이 카테고리(category) 물품을 지금까지 한 번도 요청·후원받은 적이 없다는 뜻이야.
+- popularityRank: 전체 플랫폼에서 실제로 많이 후원(수령)된 순위야. 1위가 가장 많이 후원된 물품이고, null이면 순위권 밖(거의 후원된 적 없음)이라는 뜻이야.
+
+[엄격한 제약조건]
+1. 반드시 위 [추천 후보 물품 목록]에 있는 itemId만 사용해. 목록에 없는 itemId를 지어내면 안 돼 — 이 목록은 이미 이 기관이 요청 중인 물품을 제외하고 만들어졌어.
+2. 최대 3개까지 골라 추천해. isNewCategory가 true인 후보와 popularityRank가 낮은 숫자(1위에 가까움)인 후보를 우선적으로 고려해.
+3. 이유는 반드시 그 물품 자신의 필드 값만 그대로 옮겨서 써 — 다른 물품이나 다른 카테고리 얘기를 섞지 마.
+   - isNewCategory가 true인 경우에만 "이 카테고리 요청이 없었다"는 취지로 써. false면 그렇게 쓰면 안 돼.
+   - popularityRank가 숫자인 경우에만 "N위"라고 정확히 그 숫자를 인용해서 인기 물품이라고 써. null이면 인기 순위를 언급하지 마.
+   - 두 필드 다 해당 안 되면(isNewCategory false, popularityRank null) "요청 목록에 추가해볼 만한 물품"처럼 담백하게만 써.
+4. 같은 문장을 여러 추천에 복사해서 쓰지 마 — 물품마다 필드 값이 다르면 이유 문장도 달라야 해.
+5. 추천할 만한 후보가 정말 없으면 recommendations를 빈 배열로 반환해.
+
+[응답 포맷]
+반드시 다음 JSON 구조로만 응답해야 해:
+{
+  "message": "기관 담당자에게 보여줄 한 문장 요약",
+  "recommendations": [
+    {
+      "itemId": "해당 물품의 ID",
+      "reason": "이 물품을 추천한 짧은 이유 (한 줄, 데이터 근거 포함)"
     }
+  ]
+}
+`;
 
-    console.error('AI Recommend Error:', error);
-    const err = error as { code?: string };
-    return res.status(500).json({
-      success: false,
-      code: err?.code ?? 'unknown',
-      message: '추천을 생성하지 못했습니다',
-    });
-  }
+  const userMessage = '지금까지의 요청·후원 이력과 전체 인기 물품 데이터를 바탕으로, 다음에 요청하면 좋을 물품을 추천해줘.';
+
+  return respondWithCompletion(res, systemPrompt, userMessage);
 });
 
 export default router;
