@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Package, CheckCircle2, BarChart3, Camera, TrendingUp, Plus, X } from 'lucide-react';
 import OrgHeader from '../components/OrgHeader';
 import MetricCard from '../components/MetricCard';
@@ -11,7 +11,7 @@ import CategoryBarChart from '../components/CategoryBarChart';
 import { organizations } from '../data/organizations';
 import { items, getCategoryLabel } from '../data/items';
 import { useDonation } from '../contexts/DonationContext';
-import { categoryBreakdown, recommendNextRequests } from '../utils/orgAnalytics';
+import { categoryBreakdown, fetchNextRequestRecommendation } from '../utils/orgAnalytics';
 
 const DAILY_URGENT_LIMIT = 3;
 
@@ -48,7 +48,23 @@ export default function OrgPage() {
   const urgentLimitReached = todayUrgentCount >= DAILY_URGENT_LIMIT;
 
   const categoryData = categoryBreakdown(mine, items);
-  const nextRequestPicks = recommendNextRequests(org.id, { requests, donations }, items);
+
+  const [nextRequest, setNextRequest] = useState({ loading: false, picks: [], message: '', source: null });
+
+  // 데이터 분석 탭을 열 때만 AI 추천을 불러온다 — 다른 탭에 있는 동안엔 호출하지 않는다.
+  useEffect(() => {
+    if (tab !== 'analytics') return;
+    let cancelled = false;
+    setNextRequest((s) => ({ ...s, loading: true }));
+
+    fetchNextRequestRecommendation(org.id, { requests, donations }, items).then((result) => {
+      if (!cancelled) setNextRequest({ loading: false, ...result });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [tab, requests, donations, org.id]);
 
   const openRequestModal = (presetItemId) => {
     setNewItemId(presetItemId ?? items[0]?.id ?? '');
@@ -182,28 +198,48 @@ export default function OrgPage() {
 
             <h2 className="mt-8 text-lg text-ink">다음에 요청하면 좋을 물품</h2>
             <p className="mt-1.5 text-sm text-subtle">
-              지금까지의 요청·후원 이력과 다른 기관들의 최근 요청 추이를 함께 봐서 추천해요.
+              지금까지의 요청·후원 이력과 전체 인기 물품 데이터를 AI가 분석해서 추천해요.
+              {import.meta.env.DEV && nextRequest.source && ` [${nextRequest.source}]`}
             </p>
-            <div className="mt-4 flex flex-col gap-3">
-              {nextRequestPicks.map(({ item, reason }) => (
-                <div
-                  key={item.id}
-                  className="flex items-center gap-3 rounded-xl border border-hairline bg-white p-4"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs text-subtle">{getCategoryLabel(item.category)}</p>
-                    <p className="mt-0.5 text-sm text-ink">{item.name}</p>
-                    <p className="mt-1 text-xs text-accent-ink">{reason}</p>
-                  </div>
-                  <button
-                    onClick={() => openRequestModal(item.id)}
-                    className="shrink-0 rounded-lg border border-brand px-3.5 py-2 text-xs text-brand transition hover:bg-brand hover:text-white"
+            {nextRequest.message && (
+              <p className="mt-2 text-sm text-ink">{nextRequest.message}</p>
+            )}
+
+            {nextRequest.loading ? (
+              <div className="mt-4 flex items-center gap-1.5 rounded-xl border border-hairline bg-white py-8 justify-center">
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-subtle" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-subtle" style={{ animationDelay: '150ms' }} />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-subtle" style={{ animationDelay: '300ms' }} />
+              </div>
+            ) : (
+              <div className="mt-4 flex flex-col gap-3">
+                {nextRequest.picks.map(({ item, reason }) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-3 rounded-xl border border-hairline bg-white p-4"
                   >
-                    요청하기
-                  </button>
-                </div>
-              ))}
-            </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-subtle">{getCategoryLabel(item.category)}</p>
+                      <p className="mt-0.5 text-sm text-ink">{item.name}</p>
+                      <p className="mt-1 text-xs text-accent-ink">{reason}</p>
+                    </div>
+                    <button
+                      onClick={() => openRequestModal(item.id)}
+                      className="shrink-0 rounded-lg border border-brand px-3.5 py-2 text-xs text-brand transition hover:bg-brand hover:text-white"
+                    >
+                      요청하기
+                    </button>
+                  </div>
+                ))}
+
+                {nextRequest.picks.length === 0 && (
+                  <div className="rounded-xl border border-hairline bg-white py-16 text-center">
+                    <TrendingUp size={28} className="mx-auto text-brand opacity-40" />
+                    <p className="mt-3 text-sm text-ink">지금은 추천할 만한 물품이 없어요</p>
+                  </div>
+                )}
+              </div>
+            )}
           </section>
         )}
       </div>

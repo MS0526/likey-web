@@ -19,8 +19,12 @@ export default function UrgentBanner({ items }) {
               to={`/items/${item.id}`}
               className="flex min-w-[200px] shrink-0 items-center gap-3 rounded-lg bg-white p-3"
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-brand-soft">
-                <ImageIcon size={16} className="text-brand opacity-40" />
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-brand-soft">
+                {item.image ? (
+                  <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                ) : (
+                  <ImageIcon size={16} className="text-brand opacity-40" />
+                )}
               </div>
               <div className="min-w-0">
                 <p className="truncate text-sm text-ink">{item.name}</p>
