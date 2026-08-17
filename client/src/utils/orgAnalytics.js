@@ -74,6 +74,10 @@ export function recommendNextRequests(orgId, { requests, donations }, items, max
     .slice(0, maxPicks);
 }
 
+// 이 등수 안에 들어야만 "인기 물품"이라고 부른다. 문턱 없이 순위만 붙이면 10위처럼
+// 사실상 안 팔리는 물품까지 "인기 물품"이라고 말하게 되는 문제가 있었음(실사용 중 발견).
+const POPULAR_RANK_THRESHOLD = 3;
+
 /** 전체 플랫폼에서 실제로 많이 후원(수령)된 물품별 순위(1위부터) — status와 무관하게 receivedQty를 합산한다. */
 function popularityRanks(requests) {
   const totals = new Map();
@@ -96,6 +100,9 @@ function popularityRanks(requests) {
  * AI가 "이 카테고리 요청이 없었나?", "몇 위인가?"를 서로 다른 배열을 대조해가며 스스로
  * 계산하게 하면 실제로 틀리는 경우가 많아서(카테고리 착각, 순위 뒤바뀜 등), 각 후보 안에
  * 정답을 미리 박아두고 AI는 그 값을 그대로 문장으로 옮기기만 하면 되게 만든다.
+ *
+ * isNewCategory도 popularityRank도 없는(내세울 근거가 전혀 없는) 후보는 아예 목록에서
+ * 뺀다 — AI가 개수를 채우려고 근거 없는 추천을 지어내는 걸 막기 위함(실사용 중 발견).
  */
 function buildCandidates(orgId, { requests, donations }, items) {
   const openItemIds = new Set(
@@ -106,20 +113,27 @@ function buildCandidates(orgId, { requests, donations }, items) {
 
   return items
     .filter((item) => !openItemIds.has(item.id))
-    .map((item) => ({
-      itemId: item.id,
-      name: item.name,
-      category: getCategoryLabel(item.category),
-      isNewCategory: !touched.has(item.category), // true면 이 기관이 이 카테고리를 접해본 적 없음
-      popularityRank: ranks.get(item.id) ?? null, // 전체 플랫폼 인기 순위(1위=가장 많이 후원됨), 없으면 순위권 밖
-    }));
+    .map((item) => {
+      const rank = ranks.get(item.id) ?? null;
+      return {
+        itemId: item.id,
+        name: item.name,
+        category: getCategoryLabel(item.category),
+        isNewCategory: !touched.has(item.category), // true면 이 기관이 이 카테고리를 접해본 적 없음
+        popularityRank: rank != null && rank <= POPULAR_RANK_THRESHOLD ? rank : null, // 상위권일 때만 순위 노출
+      };
+    })
+    .filter((c) => c.isNewCategory || c.popularityRank != null); // 내세울 근거가 있는 후보만 남김
 }
 
 /**
  * 기관의 "다음 요청 추천"을 AI(OpenAI)로 받아온다. 이미 계산된 후보 목록(candidates)을
- * 백엔드로 보내 AI가 그중 최대 3개를 고르고 이유를 문장으로 써주게 한다. 백엔드 호출이
- * 실패하거나(키 미설정, 타임아웃 등) 빈 추천이 오면 규칙 기반 recommendNextRequests로
- * 폴백한다 — fetchRecommendation(recommend.js)과 동일한 폴백 패턴.
+ * 백엔드로 보내 AI가 그중 최대 3개를 고르고 이유를 문장으로 써주게 한다. 백엔드 호출
+ * 자체가 실패한 경우(키 미설정, 타임아웃, 네트워크 오류 등)에만 규칙 기반
+ * recommendNextRequests로 폴백한다 — fetchRecommendation(recommend.js)과 동일한 패턴.
+ * AI가 정상 응답했다면 recommendations가 빈 배열이어도(추천할 후보가 없다는 뜻) 그대로
+ * 신뢰한다 — 후보 자체가 없어서 빈 배열인 걸 "AI가 실패했다"고 오해해 폴백하면, 근거
+ * 없는 로컬 추천으로 억지로 채우게 되어 오히려 나빠진다.
  *
  * @returns { message, picks: { item, reason }[], source: 'ai' | 'local' }
  */
@@ -129,7 +143,7 @@ export async function fetchNextRequestRecommendation(orgId, { requests, donation
       candidates: buildCandidates(orgId, { requests, donations }, items),
     });
     const data = res.data;
-    if (data?.recommendations?.length) {
+    if (Array.isArray(data?.recommendations)) {
       const picks = data.recommendations
         .map(({ itemId, reason }) => {
           const item = items.find((i) => i.id === itemId);
@@ -138,9 +152,7 @@ export async function fetchNextRequestRecommendation(orgId, { requests, donation
         .filter(Boolean)
         .slice(0, maxPicks);
 
-      if (picks.length > 0) {
-        return { message: data.message ?? '', picks, source: 'ai' };
-      }
+      return { message: data.message ?? '', picks, source: 'ai' };
     }
   } catch {
     // 백엔드 미기동·타임아웃·키 미설정 등 → 로컬 규칙 기반으로 폴백
