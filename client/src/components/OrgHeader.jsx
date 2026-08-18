@@ -1,39 +1,42 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Heart, LogOut } from 'lucide-react';
 import { useLogout } from '../contexts/AuthContext';
+import Container from './Container';
 
 export default function OrgHeader({ organization }) {
   const initial = organization.name.charAt(0);
   const handleLogout = useLogout();
 
   return (
-    <header className="flex items-center justify-between bg-white px-6 py-3">
-      <div className="flex items-center gap-4">
-        <Link to="/" className="text-subtle">
-          <ArrowLeft size={18} />
-        </Link>
-        <Link to="/" className="flex items-center gap-2">
-          <Heart size={18} className="fill-brand text-brand" />
-          <span className="text-sm text-ink">라이키</span>
-        </Link>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-xs text-white">
-            {initial}
-          </div>
-          <span className="text-sm text-ink">{organization.name}</span>
+    <header className="bg-white">
+      <Container className="flex items-center justify-between py-3">
+        <div className="flex items-center gap-4">
+          <Link to="/" className="text-subtle">
+            <ArrowLeft size={18} />
+          </Link>
+          <Link to="/" className="flex items-center gap-2">
+            <Heart size={18} className="fill-brand text-brand" />
+            <span className="text-sm text-ink">라이키</span>
+          </Link>
         </div>
 
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-1 whitespace-nowrap text-sm text-subtle transition hover:text-ink"
-        >
-          <LogOut size={14} />
-          로그아웃
-        </button>
-      </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-xs text-white">
+              {initial}
+            </div>
+            <span className="text-sm text-ink">{organization.name}</span>
+          </div>
+
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-1 whitespace-nowrap text-sm text-subtle transition hover:text-ink"
+          >
+            <LogOut size={14} />
+            로그아웃
+          </button>
+        </div>
+      </Container>
     </header>
   );
 }

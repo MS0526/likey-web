@@ -1,6 +1,7 @@
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Image as ImageIcon, BadgeCheck } from 'lucide-react';
 import ProgressBar from '../components/ProgressBar';
+import Container from '../components/Container';
 import { getItemById } from '../data/items';
 import { getOrganizationById, getRegionLabel } from '../data/organizations';
 import { useDonation } from '../contexts/DonationContext';
@@ -25,12 +26,15 @@ export default function OrgDetailPage() {
 
   return (
     <div className="min-h-screen bg-cream">
-      <header className="flex items-center gap-4 bg-white px-6 py-3">
-        <Link to="/market" className="text-subtle"><ArrowLeft size={18} /></Link>
-        <span className="text-sm text-ink">기관 상세</span>
+      <header className="bg-white">
+        <Container className="flex items-center gap-4 py-3">
+          <Link to="/market" className="text-subtle"><ArrowLeft size={18} /></Link>
+          <span className="text-sm text-ink">기관 상세</span>
+        </Container>
       </header>
 
-      <div className="mx-auto max-w-2xl px-6 py-8">
+      <Container className="py-8">
+        <div className="mx-auto max-w-2xl">
         <div className="flex items-center gap-2">
           <h1 className="text-2xl text-ink">{org.name}</h1>
           {org.verified && <BadgeCheck size={18} className="text-accent" />}
@@ -77,7 +81,8 @@ export default function OrgDetailPage() {
             </p>
           )}
         </div>
-      </div>
+        </div>
+      </Container>
     </div>
   );
 }

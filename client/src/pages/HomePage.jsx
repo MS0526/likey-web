@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { Heart, ChevronRight, ArrowDown } from 'lucide-react';
 import KoreaMap from '../components/KoreaMap';
+import Container from '../components/Container';
 import { organizations, getRegionCounts } from '../data/organizations';
 import { useDonation } from '../contexts/DonationContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -44,7 +45,7 @@ export default function HomePage() {
 
       {/* ── 히어로 ── */}
       <section className="min-h-screen bg-night">
-        <div className="flex items-center justify-between px-8 py-5">
+        <Container className="flex items-center justify-between py-5">
           <div className="flex items-center gap-2">
             <Heart size={20} className="fill-accent text-accent" />
             <span className="text-base text-cream">라이키</span>
@@ -52,9 +53,9 @@ export default function HomePage() {
           <a href="#available-now" className="flex items-center gap-1 text-sm text-subtle">
             서비스 소개 <ArrowDown size={14} />
           </a>
-        </div>
+        </Container>
 
-        <div className="grid items-center gap-8 px-8 pb-16 pt-6 md:grid-cols-2 md:gap-4 lg:gap-6">
+        <Container className="grid items-center gap-8 pb-16 pt-6 md:grid-cols-2 md:gap-4 lg:gap-6">
           <div>
             <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-accent" />
@@ -98,7 +99,7 @@ export default function HomePage() {
               />
             </div>
           </div>
-        </div>
+        </Container>
       </section>
 
       <AiDemo />

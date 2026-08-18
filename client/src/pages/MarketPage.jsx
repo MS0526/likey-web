@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import Header from '../components/Header';
+import Container from '../components/Container';
 import CategoryNav from '../components/CategoryNav';
 import UrgentBanner from '../components/UrgentBanner';
 import ItemCard from '../components/ItemCard';
@@ -63,15 +64,17 @@ export default function MarketPage() {
     <div className="min-h-screen bg-cream">
       <Header query={query} onQueryChange={setQuery} orgCount={organizations.length} />
 
-      <div className="flex items-center justify-between bg-brand px-6 py-3.5">
-        <p className="text-sm text-white">
-          전국 <strong>{organizations.length}개의 기관</strong>이{' '}
-          <strong>{needCount}개의 물품</strong>이 필요합니다!
-        </p>
-        <p className="text-xs text-white/70">기관이 수락한 후원만 배송됩니다</p>
+      <div className="bg-brand">
+        <Container className="flex items-center justify-between py-3.5">
+          <p className="text-sm text-white">
+            전국 <strong>{organizations.length}개의 기관</strong>이{' '}
+            <strong>{needCount}개의 물품</strong>이 필요합니다!
+          </p>
+          <p className="text-xs text-white/70">기관이 수락한 후원만 배송됩니다</p>
+        </Container>
       </div>
 
-      <div className="px-6 py-5 pb-24">
+      <Container className="py-5 pb-24">
         <CategoryNav selected={category} onSelect={setCategory} />
 
         <div className="mt-5">
@@ -81,7 +84,7 @@ export default function MarketPage() {
         {matchingOrgs.length > 0 && (
           <div className="mt-6">
             <h2 className="text-sm text-ink">기관</h2>
-            <div className="mt-3 grid gap-5 md:grid-cols-4">
+            <div className="mt-3 grid gap-5 md:grid-cols-4 xl:grid-cols-5">
               {matchingOrgs.map((org) => (
                 <OrgCard key={org.id} organization={org} />
               ))}
@@ -93,7 +96,7 @@ export default function MarketPage() {
           <h2 className="mt-6 text-sm text-ink">물품</h2>
         )}
 
-        <div className="mt-3 grid gap-5 md:grid-cols-4">
+        <div className="mt-3 grid gap-5 md:grid-cols-4 xl:grid-cols-5">
           {visible.map((item) => (
             <ItemCard key={item.id} item={item} />
           ))}
@@ -104,7 +107,7 @@ export default function MarketPage() {
             조건에 맞는 물품이 없습니다. 다른 카테고리를 선택해 보세요.
           </p>
         )}
-      </div>
+      </Container>
 
       <AiChatbot />
     </div>

@@ -1,5 +1,6 @@
 import { organizations } from '../data/organizations';
 import { useDonation } from '../contexts/DonationContext';
+import Container from './Container';
 
 export default function StatBar() {
   const { requests } = useDonation();
@@ -18,18 +19,20 @@ export default function StatBar() {
   ];
 
   return (
-    <section className="bg-cream px-6 pb-20">
-      <div className="mx-auto grid max-w-3xl gap-3 md:grid-cols-4">
-        {stats.map(({ value, unit, label }) => (
-          <div key={label} className="rounded-xl bg-white px-4 py-6 text-center">
-            <p className="font-mono text-2xl text-brand">
-              {typeof value === 'number' ? value.toLocaleString('ko-KR') : value}
-              <span className="text-sm">{unit}</span>
-            </p>
-            <p className="mt-2 text-xs text-subtle">{label}</p>
-          </div>
-        ))}
-      </div>
+    <section className="bg-cream pb-20">
+      <Container>
+        <div className="mx-auto grid max-w-3xl gap-3 md:grid-cols-4">
+          {stats.map(({ value, unit, label }) => (
+            <div key={label} className="rounded-xl bg-white px-4 py-6 text-center">
+              <p className="font-mono text-2xl text-brand">
+                {typeof value === 'number' ? value.toLocaleString('ko-KR') : value}
+                <span className="text-sm">{unit}</span>
+              </p>
+              <p className="mt-2 text-xs text-subtle">{label}</p>
+            </div>
+          ))}
+        </div>
+      </Container>
     </section>
   );
 }

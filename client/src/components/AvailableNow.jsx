@@ -1,4 +1,5 @@
 import { Shield, Heart, Check, AlertTriangle, Camera, Sparkles } from 'lucide-react';
+import Container from './Container';
 
 const FEATURES = [
   { Icon: Shield, title: '기관 수락 게이트',
@@ -17,21 +18,23 @@ const FEATURES = [
 
 export default function AvailableNow() {
   return (
-    <section id="available-now" className="bg-white px-6 py-20">
-      <h2 className="text-center text-2xl text-ink">이미 이용할 수 있어요</h2>
-      <p className="mt-3 text-center text-sm text-subtle">
-        라이키에서 지금 바로 경험할 수 있는 기능들이에요
-      </p>
+    <section id="available-now" className="bg-white py-20">
+      <Container>
+        <h2 className="text-center text-2xl text-ink">이미 이용할 수 있어요</h2>
+        <p className="mt-3 text-center text-sm text-subtle">
+          라이키에서 지금 바로 경험할 수 있는 기능들이에요
+        </p>
 
-      <div className="mx-auto mt-10 grid max-w-4xl gap-4 md:grid-cols-3">
-        {FEATURES.map(({ Icon, title, desc }) => (
-          <div key={title} className="rounded-2xl border border-hairline bg-cream p-6">
-            <Icon size={24} className="text-brand" />
-            <p className="mt-4 text-base text-ink">{title}</p>
-            <p className="mt-2 text-sm leading-relaxed text-subtle">{desc}</p>
-          </div>
-        ))}
-      </div>
+        <div className="mx-auto mt-10 grid max-w-4xl gap-4 md:grid-cols-3">
+          {FEATURES.map(({ Icon, title, desc }) => (
+            <div key={title} className="rounded-2xl border border-hairline bg-cream p-6">
+              <Icon size={24} className="text-brand" />
+              <p className="mt-4 text-base text-ink">{title}</p>
+              <p className="mt-2 text-sm leading-relaxed text-subtle">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </Container>
     </section>
   );
 }

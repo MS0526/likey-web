@@ -4,6 +4,7 @@ import { ArrowLeft, Image as ImageIcon, Check, ShoppingCart, Sparkles, ArrowRigh
 import ProgressBar from '../components/ProgressBar';
 import ItemImage from '../components/ItemImage';
 import ProofModal from '../components/ProofModal';
+import Container from '../components/Container';
 import { getItemById, getCategoryLabel } from '../data/items';
 import { getOrganizationById } from '../data/organizations';
 import { useDonation } from '../contexts/DonationContext';
@@ -105,9 +106,11 @@ export default function DetailPage() {
 
   return (
     <div className="min-h-screen bg-cream">
-      <header className="flex items-center gap-4 bg-white px-6 py-3">
-        <Link to="/market" className="text-subtle"><ArrowLeft size={18} /></Link>
-        <span className="text-sm text-ink">물품 상세</span>
+      <header className="bg-white">
+        <Container className="flex items-center gap-4 py-3">
+          <Link to="/market" className="text-subtle"><ArrowLeft size={18} /></Link>
+          <span className="text-sm text-ink">물품 상세</span>
+        </Container>
       </header>
 
       {inQueue && !done && !added && (
@@ -159,7 +162,7 @@ export default function DetailPage() {
         </div>
       )}
 
-      <div className="grid gap-8 px-6 py-8 md:grid-cols-2">
+      <Container className="grid gap-8 py-8 md:grid-cols-2">
         <ItemImage
           src={item.image}
           alt={item.name}
@@ -340,7 +343,7 @@ export default function DetailPage() {
             결제 후 {picked?.org.name ?? '기관'}이 수락하면 배송이 시작됩니다
           </p>
         </div>
-      </div>
+      </Container>
 
       <ProofModal proof={selectedProof} onClose={() => setSelectedProof(null)} />
     </div>

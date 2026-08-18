@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ShoppingCart, Trash2, Check, Info } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useDonation } from '../contexts/DonationContext';
+import Container from '../components/Container';
 import { getItemById } from '../data/items';
 import { getOrganizationById } from '../data/organizations';
 import { formatWon } from '../utils/urgency';
@@ -59,9 +60,11 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-cream">
-      <header className="flex items-center gap-4 bg-white px-6 py-3">
-        <Link to="/market" className="text-subtle"><ArrowLeft size={18} /></Link>
-        <span className="text-sm text-ink">장바구니</span>
+      <header className="bg-white">
+        <Container className="flex items-center gap-4 py-3">
+          <Link to="/market" className="text-subtle"><ArrowLeft size={18} /></Link>
+          <span className="text-sm text-ink">장바구니</span>
+        </Container>
       </header>
 
       {done && (
@@ -78,7 +81,8 @@ export default function CartPage() {
         </div>
       )}
 
-      <div className="mx-auto max-w-2xl px-6 py-8">
+      <Container className="py-8">
+        <div className="mx-auto max-w-2xl">
         {rows.length === 0 ? (
           <div className="rounded-xl border border-hairline bg-white py-20 text-center">
             <ShoppingCart size={28} className="mx-auto text-subtle" />
@@ -168,7 +172,8 @@ export default function CartPage() {
             </button>
           </>
         )}
-      </div>
+        </div>
+      </Container>
     </div>
   );
 }
