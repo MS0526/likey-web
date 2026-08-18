@@ -1,5 +1,6 @@
 import { api } from '../lib/api';
 import { getCategoryLabel } from '../data/items';
+import { getCachedAIResult, setCachedAIResult } from './aiCache';
 
 const CATEGORY_ORDER = ['food', 'goods', 'toy', 'clothing', 'medicine', 'edu'];
 
@@ -135,13 +136,22 @@ function buildCandidates(orgId, { requests, donations }, items) {
  * 신뢰한다 — 후보 자체가 없어서 빈 배열인 걸 "AI가 실패했다"고 오해해 폴백하면, 근거
  * 없는 로컬 추천으로 억지로 채우게 되어 오히려 나빠진다.
  *
+ * candidates(이 기관의 상황)가 이전과 완전히 같으면 API를 다시 부르지 않고 캐시된 결과를
+ * 즉시 반환한다(aiCache.js) — OrgPage의 "데이터 분석" 탭을 여러 번 들락거려도(탭 전환마다
+ * 다시 호출되는 구조라서) OpenAI 무료 티어 하루 요청 한도를 헛되이 쓰지 않기 위함. 로컬
+ * 폴백 결과는 캐싱하지 않는다.
+ *
  * @returns { message, picks: { item, reason }[], source: 'ai' | 'local' }
  */
 export async function fetchNextRequestRecommendation(orgId, { requests, donations }, items, maxPicks = 3) {
+  const candidates = buildCandidates(orgId, { requests, donations }, items);
+  const cacheKey = `org-recommend:${orgId}:${JSON.stringify(candidates)}`;
+
+  const cached = getCachedAIResult(cacheKey);
+  if (cached) return cached;
+
   try {
-    const res = await api.post('/api/ai/org-recommend', {
-      candidates: buildCandidates(orgId, { requests, donations }, items),
-    });
+    const res = await api.post('/api/ai/org-recommend', { candidates });
     const data = res.data;
     if (Array.isArray(data?.recommendations)) {
       const picks = data.recommendations
@@ -152,7 +162,9 @@ export async function fetchNextRequestRecommendation(orgId, { requests, donation
         .filter(Boolean)
         .slice(0, maxPicks);
 
-      return { message: data.message ?? '', picks, source: 'ai' };
+      const result = { message: data.message ?? '', picks, source: 'ai' };
+      setCachedAIResult(cacheKey, result);
+      return result;
     }
   } catch {
     // 백엔드 미기동·타임아웃·키 미설정 등 → 로컬 규칙 기반으로 폴백
