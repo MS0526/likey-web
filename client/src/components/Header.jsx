@@ -13,7 +13,7 @@ export default function Header({ query, onQueryChange, orgCount }) {
 
   return (
     <header className="bg-white">
-      <Container className="flex items-center gap-4 py-3">
+      <Container className="flex items-center gap-2 py-3 sm:gap-4">
         <Link to="/" className="shrink-0 text-subtle">
           <ArrowLeft size={18} />
         </Link>
@@ -23,24 +23,28 @@ export default function Header({ query, onQueryChange, orgCount }) {
           <span className="whitespace-nowrap text-sm text-ink">나눔카트</span>
         </Link>
 
-        <div className="mx-auto flex w-full max-w-xl items-center gap-2 rounded-full bg-cream px-4 py-2">
-          <Search size={15} className="text-subtle" />
-          <input
-            value={query}
-            onChange={(e) => onQueryChange(e.target.value)}
-            placeholder="물품·기관 검색..."
-            className="w-full bg-transparent text-sm text-ink outline-none"
-          />
+        {/* 남은 공간만큼만 차지하고(min-w-0으로 축소 허용) 그 안에서 검색창을 중앙 정렬한다 —
+            바깥 요소를 그냥 flex-1로만 두면 내부 input의 기본 최소폭 때문에 375px에서 넘친다 */}
+        <div className="min-w-0 flex-1">
+          <div className="mx-auto flex max-w-xl items-center gap-2 rounded-full bg-cream px-4 py-2">
+            <Search size={15} className="shrink-0 text-subtle" />
+            <input
+              value={query}
+              onChange={(e) => onQueryChange(e.target.value)}
+              placeholder="물품·기관 검색..."
+              className="w-full min-w-0 bg-transparent text-sm text-ink outline-none"
+            />
+          </div>
         </div>
 
-        <span className="shrink-0 whitespace-nowrap text-sm text-brand">{orgCount}개 기관 등록</span>
+        <span className="hidden shrink-0 whitespace-nowrap text-sm text-brand sm:inline">{orgCount}개 기관 등록</span>
 
         <Link
           to="/feed"
           className="flex shrink-0 items-center gap-1 whitespace-nowrap text-sm text-subtle transition hover:text-ink"
         >
           <Camera size={15} />
-          후원 인증
+          <span className="hidden sm:inline">후원 인증</span>
         </Link>
 
         {user.role !== 'org' && (

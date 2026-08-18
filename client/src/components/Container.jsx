@@ -3,5 +3,7 @@
  * 요소는 바깥 태그(예: <header>)에 배경색을 주고, 그 안의 실제 내용만 이 컴포넌트로 감싼다.
  */
 export default function Container({ as: Tag = 'div', className = '', children }) {
-  return <Tag className={`mx-auto max-w-6xl px-4 ${className}`}>{children}</Tag>;
+  return (
+    <Tag className={`box-border mx-auto w-full max-w-6xl px-4 ${className}`}>{children}</Tag>
+  );
 }

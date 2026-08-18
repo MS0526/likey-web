@@ -5,14 +5,14 @@ export default function UrgentBanner({ items }) {
   if (items.length === 0) return null;
 
   return (
-    <div className="rounded-xl bg-alert-soft p-5">
+    <div className="min-w-0 rounded-xl bg-alert-soft p-5">
       <div className="flex items-center gap-2">
         <span className="h-2 w-2 rounded-full bg-alert" />
         <p className="text-sm text-alert">긴급 후원 필요</p>
       </div>
 
-      <div className="relative mt-4">
-        <div className="scrollbar-hide flex gap-3 overflow-x-auto">
+      <div className="relative mt-4 min-w-0">
+        <div className="scrollbar-hide flex w-full gap-3 overflow-x-auto">
           {items.map(({ item, percent, urgentReason, neededQty, urgentQty }) => (
             <Link
               key={item.id}

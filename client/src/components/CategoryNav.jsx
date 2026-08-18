@@ -4,8 +4,8 @@ export default function CategoryNav({ selected, onSelect }) {
   const tabs = [{ key: 'all', label: '전체' }, ...CATEGORIES];
 
   return (
-    <div className="relative">
-      <div className="scrollbar-hide flex gap-2 overflow-x-auto">
+    <div className="relative min-w-0 w-full">
+      <div className="scrollbar-hide flex w-full gap-2 overflow-x-auto">
         {tabs.map(({ key, label }) => {
           const active = selected === key;
           return (
