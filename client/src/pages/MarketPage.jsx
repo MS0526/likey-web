@@ -71,7 +71,7 @@ export default function MarketPage() {
         <p className="text-xs text-white/70">기관이 수락한 후원만 배송됩니다</p>
       </div>
 
-      <div className="px-6 py-5">
+      <div className="px-6 py-5 pb-24">
         <CategoryNav selected={category} onSelect={setCategory} />
 
         <div className="mt-5">
