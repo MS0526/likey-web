@@ -3,6 +3,7 @@ import { items, CATEGORIES } from '../data/items';
 import { getOrganizationById } from '../data/organizations';
 import { progressOf, formatWon } from './urgency';
 import { fetchGeminiRecommendation } from './geminiRecommend';
+import { getCachedAIResult, setCachedAIResult } from './aiCache';
 
 /** 요청 하나의 남은 수량 */
 const remainOf = (req) =>
@@ -185,21 +186,32 @@ function localRecommend(budget, requests, query = null, maxPicks = 3) {
  * 대신 signal이 취소되면(호출부가 30초 넘게 기다리다 포기한 경우) 그 즉시 로컬로 넘어간다.
  * Gemini 직접 호출은 프로덕션 빌드에서는 절대 실행되지 않는다(API 키 노출 방지).
  * budget은 없을 수 있다(예산 없이 자유 질문만 들어온 경우) — 각 단계가 알아서 처리한다.
+ * (budget, query, requests) 조합이 이전과 똑같으면 API를 다시 부르지 않고 캐시된 결과를
+ * 즉시 반환한다(aiCache.js) — OpenAI 무료 티어 하루 요청 한도를 아끼기 위함. 로컬/Gemini
+ * 폴백 결과는 캐싱하지 않는다.
  *
  * @param {AbortSignal} [signal] 호출부가 넘기면, 취소됐을 때 남은 네트워크 요청을 즉시 정리하고 로컬로 넘어간다.
  * @returns { message, picks, spent, source: 'api' | 'gemini' | 'local' }
  */
 export async function fetchRecommendation({ budget = null, query = null, requests, signal }) {
+  const apiContext = buildApiContext(requests);
+  const cacheKey = `recommend:${JSON.stringify({ budget, query, apiContext })}`;
+
+  const cached = getCachedAIResult(cacheKey);
+  if (cached) return cached;
+
   try {
     try {
       const res = await api.post(
         '/api/ai/recommend',
-        { budget, prompt: query, requests: buildApiContext(requests) },
+        { budget, prompt: query, requests: apiContext },
         { timeout: REQUEST_TIMEOUT_MS, signal }
       );
       const data = res.data;
       if (data?.recommendations?.length) {
-        return { ...normalize(data, requests), source: 'api' };
+        const result = { ...normalize(data, requests), source: 'api' };
+        setCachedAIResult(cacheKey, result);
+        return result;
       }
     } catch (err) {
       if (import.meta.env.DEV) {
