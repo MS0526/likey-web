@@ -28,6 +28,20 @@ export const organizations = [
 export const getOrganizationById = (id) =>
   organizations.find((org) => org.id === id);
 
+const REGION_LABELS = {
+  gyeonggi: '경기·서울·인천',
+  gangwon: '강원',
+  chungnam: '충남·대전·세종',
+  chungbuk: '충북',
+  gyeongbuk: '경북·대구',
+  jeonbuk: '전북',
+  jeonnam: '전남·광주',
+  gyeongnam: '경남·부산·울산',
+  jeju: '제주',
+};
+
+export const getRegionLabel = (region) => REGION_LABELS[region] ?? region;
+
 export const getRegionCounts = () =>
   organizations.reduce((acc, o) => {
     acc[o.region] = (acc[o.region] ?? 0) + 1;

@@ -3,6 +3,7 @@ import Header from '../components/Header';
 import CategoryNav from '../components/CategoryNav';
 import UrgentBanner from '../components/UrgentBanner';
 import ItemCard from '../components/ItemCard';
+import OrgCard from '../components/OrgCard';
 import AiChatbot from '../components/AiChatbot';
 import { items } from '../data/items';
 import { organizations } from '../data/organizations';
@@ -24,6 +25,11 @@ export default function MarketPage() {
         .filter((i) => (category === 'all' ? true : i.category === category))
         .filter((i) => (query ? i.name.includes(query) : true)),
     [category, query]
+  );
+
+  const matchingOrgs = useMemo(
+    () => (query ? organizations.filter((o) => o.name.includes(query)) : []),
+    [query]
   );
 
   const urgent = useMemo(() => {
@@ -72,7 +78,22 @@ export default function MarketPage() {
           <UrgentBanner items={urgent} />
         </div>
 
-        <div className="mt-6 grid gap-5 md:grid-cols-4">
+        {matchingOrgs.length > 0 && (
+          <div className="mt-6">
+            <h2 className="text-sm text-ink">기관</h2>
+            <div className="mt-3 grid gap-5 md:grid-cols-4">
+              {matchingOrgs.map((org) => (
+                <OrgCard key={org.id} organization={org} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {query && (
+          <h2 className="mt-6 text-sm text-ink">물품</h2>
+        )}
+
+        <div className="mt-3 grid gap-5 md:grid-cols-4">
           {visible.map((item) => (
             <ItemCard key={item.id} item={item} />
           ))}

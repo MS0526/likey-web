@@ -40,8 +40,11 @@ export default function DetailPage() {
 
   // 물품이 바뀔 때(대기열의 다음 물품으로 이동 포함) 선택 상태를 새 물품 기준으로 초기화한다.
   // queue의 qty가 있으면 수량 선택기 초기값으로 사용한다.
+  // org 쿼리(기관 상세에서 넘어온 경우)가 해당 물품을 요청 중인 기관이면 그 기관을 기본 선택한다.
   useEffect(() => {
-    setOrgId(reqs[0]?.orgId ?? '');
+    const orgParam = searchParams.get('org');
+    const preferredOrgId = reqs.some((r) => r.orgId === orgParam) ? orgParam : reqs[0]?.orgId ?? '';
+    setOrgId(preferredOrgId);
     setDone(false);
     setAdded(false);
     const queuedQty = queueQtys[queueIndex];

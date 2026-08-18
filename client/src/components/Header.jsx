@@ -26,7 +26,7 @@ export default function Header({ query, onQueryChange, orgCount }) {
         <input
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
-          placeholder="물품 검색..."
+          placeholder="물품·기관 검색..."
           className="w-full bg-transparent text-sm text-ink outline-none"
         />
       </div>
