@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { MapPin, Image as ImageIcon } from 'lucide-react';
 import ProgressBar from './ProgressBar';
+import ItemImage from './ItemImage';
 import { getCategoryLabel } from '../data/items';
 import { useDonation } from '../contexts/DonationContext';
 import { progressOfAll, urgencyOf, URGENCY_STYLE, formatWon } from '../utils/urgency';
@@ -17,16 +18,16 @@ export default function ItemCard({ item }) {
       to={`/items/${item.id}`}
       className="block overflow-hidden rounded-xl border border-hairline bg-white transition hover:border-brand"
     >
-      <div className="relative flex h-40 items-center justify-center overflow-hidden bg-brand-soft">
-        {item.image ? (
-          <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
-        ) : (
-          <ImageIcon size={30} className="text-brand opacity-40" />
-        )}
+      <ItemImage
+        src={item.image}
+        alt={item.name}
+        aspect="aspect-square"
+        placeholderIcon={<ImageIcon size={30} className="text-brand opacity-40" />}
+      >
         <span className={`absolute right-3 top-3 rounded-full px-2.5 py-1 text-xs ${URGENCY_STYLE[urgency.key]}`}>
           {urgency.label}
         </span>
-      </div>
+      </ItemImage>
 
       <div className="p-4">
         <p className="text-xs text-subtle">{getCategoryLabel(item.category)}</p>

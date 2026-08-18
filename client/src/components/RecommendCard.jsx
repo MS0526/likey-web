@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Package } from 'lucide-react';
+import ItemImage from './ItemImage';
 import { formatWon } from '../utils/urgency';
 
 export default function RecommendCard({ pick, to }) {
@@ -10,13 +11,13 @@ export default function RecommendCard({ pick, to }) {
       to={to}
       className="flex items-center gap-3 rounded-xl border border-hairline bg-white p-3 transition hover:border-brand"
     >
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-brand-soft">
-        {item.image ? (
-          <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
-        ) : (
-          <Package size={20} className="text-brand opacity-50" />
-        )}
-      </div>
+      <ItemImage
+        src={item.image}
+        alt={item.name}
+        aspect="aspect-square"
+        placeholderIcon={<Package size={20} className="text-brand opacity-50" />}
+        className="w-12 shrink-0 rounded-lg"
+      />
 
       <div className="min-w-0 flex-1">
         <p className="truncate text-xs text-subtle">{org.name}</p>

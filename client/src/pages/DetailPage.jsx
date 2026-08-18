@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { ArrowLeft, Image as ImageIcon, Check, ShoppingCart, Sparkles, ArrowRight } from 'lucide-react';
 import ProgressBar from '../components/ProgressBar';
+import ItemImage from '../components/ItemImage';
 import { getItemById, getCategoryLabel } from '../data/items';
 import { getOrganizationById } from '../data/organizations';
 import { useDonation } from '../contexts/DonationContext';
@@ -153,13 +154,13 @@ export default function DetailPage() {
       )}
 
       <div className="grid gap-8 px-6 py-8 md:grid-cols-2">
-        <div className="flex h-72 items-center justify-center overflow-hidden rounded-xl bg-brand-soft">
-          {item.image ? (
-            <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
-          ) : (
-            <ImageIcon size={52} className="text-brand opacity-40" />
-          )}
-        </div>
+        <ItemImage
+          src={item.image}
+          alt={item.name}
+          aspect="aspect-[4/3]"
+          placeholderIcon={<ImageIcon size={52} className="text-brand opacity-40" />}
+          className="rounded-xl"
+        />
 
         <div>
           <span className="rounded-full bg-brand-soft px-2.5 py-1 text-xs text-brand">
