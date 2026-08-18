@@ -33,6 +33,7 @@ export const items = [
     image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&h=300&fit=crop&auto=format',
     description: '만 3세 이상 복용 가능한 츄어블 형태 종합 비타민입니다.' },
   { id: 'item-09', name: '가정용 상비약 키트', category: 'medicine', price: 26000, weight: '700g',
+    image: 'https://images.unsplash.com/photo-1563260324-5ebeedc8af7c?w=400&h=300&fit=crop&auto=format',
     description: '해열 패치, 소독약, 밴드 등으로 구성된 기본 구급 키트입니다.' },
   { id: 'item-10', name: '색연필·스케치북 세트', category: 'edu', price: 12000, weight: '800g',
     image: 'https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?w=400&h=300&fit=crop&auto=format',
@@ -41,6 +42,7 @@ export const items = [
     image: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&h=300&fit=crop&auto=format',
     description: '유아~초등 저학년용 창작 동화책 12권 묶음입니다.' },
   { id: 'item-12', name: '초등 학습 노트 10권 세트', category: 'edu', price: 8500, weight: '1.2kg',
+    image: 'https://images.unsplash.com/photo-1733878859915-dc074dd9ee27?w=400&h=300&fit=crop&auto=format',
     description: '초등학생용 줄노트 10권 묶음입니다.' },
 ];
 
