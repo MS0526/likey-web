@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { MapPin, Image as ImageIcon } from 'lucide-react';
+import { MapPin, Image as ImageIcon, Camera } from 'lucide-react';
 import ProgressBar from './ProgressBar';
 import ItemImage from './ItemImage';
 import { getCategoryLabel } from '../data/items';
@@ -7,11 +7,12 @@ import { useDonation } from '../contexts/DonationContext';
 import { progressOfAll, urgencyOf, URGENCY_STYLE, formatWon } from '../utils/urgency';
 
 export default function ItemCard({ item }) {
-  const { getRequestsByItem } = useDonation();
+  const { getRequestsByItem, getPublishedProofs } = useDonation();
   const reqs = getRequestsByItem(item.id);
   const percent = progressOfAll(reqs);
   const urgency = reqs.some((r) => r.urgentQty > 0) ? { key: 'high', label: '긴급' } : urgencyOf(percent);
   const pendingQty = reqs.reduce((s, r) => s + r.pendingQty, 0);
+  const proofCount = getPublishedProofs().filter((p) => p.itemId === item.id).length;
 
   return (
     <Link
@@ -47,6 +48,11 @@ export default function ItemCard({ item }) {
             {reqs.length}개 기관
           </span>
         </div>
+        {proofCount > 0 && (
+          <p className="mt-2 flex items-center gap-1 text-[11px] text-brand">
+            <Camera size={11} /> 후원 인증 {proofCount}건
+          </p>
+        )}
       </div>
     </Link>
   );

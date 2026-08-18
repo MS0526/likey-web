@@ -4,6 +4,7 @@ import { Camera, Gift } from 'lucide-react';
 import Header from '../components/Header';
 import MetricCard from '../components/MetricCard';
 import CategoryBarChart from '../components/CategoryBarChart';
+import ProofModal from '../components/ProofModal';
 import { organizations, getOrganizationById } from '../data/organizations';
 import { items, getItemById } from '../data/items';
 import { useDonation } from '../contexts/DonationContext';
@@ -15,6 +16,7 @@ const MY_DONOR_LABEL = '나 (테스트 후원자)';
 
 export default function FeedPage() {
   const [query, setQuery] = useState('');
+  const [selectedProof, setSelectedProof] = useState(null);
   const { donations, getPublishedProofs, totalAmount } = useDonation();
   const proofs = getPublishedProofs();
 
@@ -73,7 +75,11 @@ export default function FeedPage() {
               const donorLabel = proof.anonymous ? '익명의 후원자' : proof.donor;
 
               return (
-                <div key={proof.id} className="overflow-hidden rounded-xl border border-hairline bg-white">
+                <button
+                  key={proof.id}
+                  onClick={() => setSelectedProof(proof)}
+                  className="overflow-hidden rounded-xl border border-hairline bg-white text-left transition hover:border-brand"
+                >
                   <div className="flex h-40 items-center justify-center bg-brand-soft">
                     {proof.imageUrl ? (
                       <img
@@ -92,12 +98,14 @@ export default function FeedPage() {
                     <p className="mt-2 text-sm leading-relaxed text-ink">{proof.message}</p>
                     <p className="mt-3 text-xs text-subtle">{donorLabel} · {proof.date}</p>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
         )}
       </div>
+
+      <ProofModal proof={selectedProof} onClose={() => setSelectedProof(null)} />
     </div>
   );
 }
