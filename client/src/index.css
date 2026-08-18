@@ -23,6 +23,14 @@ html {
   scroll-behavior: smooth;
 }
 
+/* 안전망: 특정 요소가 뷰포트보다 넓어지더라도 페이지 전체 가로 스크롤은 막는다.
+   근본 원인(요소 자체의 overflow)은 각 컴포넌트에서 따로 해결해야 한다. */
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 .scrollbar-hide {
   scrollbar-width: none;
   -ms-overflow-style: none;

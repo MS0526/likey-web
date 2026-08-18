@@ -65,7 +65,7 @@ export default function MarketPage() {
       <Header query={query} onQueryChange={setQuery} orgCount={organizations.length} />
 
       <div className="bg-brand">
-        <Container className="flex items-center justify-between py-3.5">
+        <Container className="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:py-3.5">
           <p className="text-sm text-white">
             전국 <strong>{organizations.length}개의 기관</strong>이{' '}
             <strong>{needCount}개의 물품</strong>이 필요합니다!
@@ -84,7 +84,7 @@ export default function MarketPage() {
         {matchingOrgs.length > 0 && (
           <div className="mt-6">
             <h2 className="text-sm text-ink">기관</h2>
-            <div className="mt-3 grid gap-5 md:grid-cols-4 xl:grid-cols-5">
+            <div className="mt-3 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
               {matchingOrgs.map((org) => (
                 <OrgCard key={org.id} organization={org} />
               ))}
@@ -96,7 +96,7 @@ export default function MarketPage() {
           <h2 className="mt-6 text-sm text-ink">물품</h2>
         )}
 
-        <div className="mt-3 grid gap-5 md:grid-cols-4 xl:grid-cols-5">
+        <div className="mt-3 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
           {visible.map((item) => (
             <ItemCard key={item.id} item={item} />
           ))}
