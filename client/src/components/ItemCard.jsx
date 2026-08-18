@@ -1,32 +1,34 @@
 import { Link } from 'react-router-dom';
-import { MapPin, Image as ImageIcon } from 'lucide-react';
+import { MapPin, Image as ImageIcon, Camera } from 'lucide-react';
 import ProgressBar from './ProgressBar';
+import ItemImage from './ItemImage';
 import { getCategoryLabel } from '../data/items';
 import { useDonation } from '../contexts/DonationContext';
 import { progressOfAll, urgencyOf, URGENCY_STYLE, formatWon } from '../utils/urgency';
 
 export default function ItemCard({ item }) {
-  const { getRequestsByItem } = useDonation();
+  const { getRequestsByItem, getPublishedProofs } = useDonation();
   const reqs = getRequestsByItem(item.id);
   const percent = progressOfAll(reqs);
   const urgency = reqs.some((r) => r.urgentQty > 0) ? { key: 'high', label: '긴급' } : urgencyOf(percent);
   const pendingQty = reqs.reduce((s, r) => s + r.pendingQty, 0);
+  const proofCount = getPublishedProofs().filter((p) => p.itemId === item.id).length;
 
   return (
     <Link
       to={`/items/${item.id}`}
       className="block overflow-hidden rounded-xl border border-hairline bg-white transition hover:border-brand"
     >
-      <div className="relative flex h-40 items-center justify-center overflow-hidden bg-brand-soft">
-        {item.image ? (
-          <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
-        ) : (
-          <ImageIcon size={30} className="text-brand opacity-40" />
-        )}
+      <ItemImage
+        src={item.image}
+        alt={item.name}
+        aspect="aspect-square"
+        placeholderIcon={<ImageIcon size={30} className="text-brand opacity-40" />}
+      >
         <span className={`absolute right-3 top-3 rounded-full px-2.5 py-1 text-xs ${URGENCY_STYLE[urgency.key]}`}>
           {urgency.label}
         </span>
-      </div>
+      </ItemImage>
 
       <div className="p-4">
         <p className="text-xs text-subtle">{getCategoryLabel(item.category)}</p>
@@ -46,6 +48,11 @@ export default function ItemCard({ item }) {
             {reqs.length}개 기관
           </span>
         </div>
+        {proofCount > 0 && (
+          <p className="mt-2 flex items-center gap-1 text-[11px] text-brand">
+            <Camera size={11} /> 후원 인증 {proofCount}건
+          </p>
+        )}
       </div>
     </Link>
   );

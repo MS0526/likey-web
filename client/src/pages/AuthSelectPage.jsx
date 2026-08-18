@@ -1,6 +1,7 @@
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Heart, Gift, Users, ChevronRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import Container from '../components/Container';
 
 export default function AuthSelectPage() {
   const [params] = useSearchParams();
@@ -36,18 +37,20 @@ export default function AuthSelectPage() {
 
   return (
     <div className="min-h-screen bg-cream">
-      <header className="flex items-center justify-between bg-white px-6 py-3">
-        <Link to="/" className="flex items-center gap-2 text-sm text-subtle">
-          <ArrowLeft size={16} /> 돌아가기
-        </Link>
-        <div className="flex items-center gap-2">
-          <Heart size={18} className="fill-brand text-brand" />
-          <span className="text-sm text-ink">라이키</span>
-        </div>
-        <div className="w-16" />
+      <header className="bg-white">
+        <Container className="flex items-center justify-between py-3">
+          <Link to="/" className="flex items-center gap-2 text-sm text-subtle">
+            <ArrowLeft size={16} /> 돌아가기
+          </Link>
+          <div className="flex items-center gap-2">
+            <Heart size={18} className="fill-brand text-brand" />
+            <span className="whitespace-nowrap text-sm text-ink">나눔카트</span>
+          </div>
+          <div className="w-16" />
+        </Container>
       </header>
 
-      <div className="px-6 py-16">
+      <Container className="py-16">
         <h1 className="text-center text-3xl text-ink">시작하기</h1>
         <p className="mt-3 text-center text-sm text-subtle">회원 유형을 선택하여 로그인하세요</p>
 
@@ -89,7 +92,7 @@ export default function AuthSelectPage() {
             로그인 없이 둘러볼래요
           </button>
         </div>
-      </div>
+      </Container>
     </div>
   );
 }

@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { ArrowLeft, Image as ImageIcon, Check, ShoppingCart, Sparkles, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Image as ImageIcon, Check, ShoppingCart, Sparkles, ArrowRight, Camera } from 'lucide-react';
 import ProgressBar from '../components/ProgressBar';
+import ItemImage from '../components/ItemImage';
+import ProofModal from '../components/ProofModal';
+import Container from '../components/Container';
 import { getItemById, getCategoryLabel } from '../data/items';
 import { getOrganizationById } from '../data/organizations';
 import { useDonation } from '../contexts/DonationContext';
@@ -12,7 +15,7 @@ export default function DetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { getRequestsByItem, createDonation } = useDonation();
+  const { getRequestsByItem, createDonation, getPublishedProofs } = useDonation();
   const { addToCart } = useCart();
 
   const item = getItemById(id);
@@ -37,11 +40,15 @@ export default function DetailPage() {
   const [done, setDone] = useState(false);
   const [added, setAdded] = useState(false);
   const [revealDonor, setRevealDonor] = useState(true);
+  const [selectedProof, setSelectedProof] = useState(null);
 
   // 물품이 바뀔 때(대기열의 다음 물품으로 이동 포함) 선택 상태를 새 물품 기준으로 초기화한다.
   // queue의 qty가 있으면 수량 선택기 초기값으로 사용한다.
+  // org 쿼리(기관 상세에서 넘어온 경우)가 해당 물품을 요청 중인 기관이면 그 기관을 기본 선택한다.
   useEffect(() => {
-    setOrgId(reqs[0]?.orgId ?? '');
+    const orgParam = searchParams.get('org');
+    const preferredOrgId = reqs.some((r) => r.orgId === orgParam) ? orgParam : reqs[0]?.orgId ?? '';
+    setOrgId(preferredOrgId);
     setDone(false);
     setAdded(false);
     const queuedQty = queueQtys[queueIndex];
@@ -60,6 +67,10 @@ export default function DetailPage() {
   if (!item) {
     return <p className="p-8 text-sm text-subtle">존재하지 않는 물품입니다.</p>;
   }
+
+  // 이 물품의 공개된 후원 인증 — 최신순으로 최대 3건만 카드로 보여준다
+  const itemProofs = getPublishedProofs().filter((p) => p.itemId === item.id);
+  const visibleProofs = itemProofs.slice(0, 3);
 
   const goToNextQueueItem = () => {
     const nextId = queueIds[queueIndex + 1];
@@ -95,9 +106,11 @@ export default function DetailPage() {
 
   return (
     <div className="min-h-screen bg-cream">
-      <header className="flex items-center gap-4 bg-white px-6 py-3">
-        <Link to="/market" className="text-subtle"><ArrowLeft size={18} /></Link>
-        <span className="text-sm text-ink">물품 상세</span>
+      <header className="bg-white">
+        <Container className="flex items-center gap-4 py-3">
+          <Link to="/market" className="text-subtle"><ArrowLeft size={18} /></Link>
+          <span className="text-sm text-ink">물품 상세</span>
+        </Container>
       </header>
 
       {inQueue && !done && !added && (
@@ -149,14 +162,14 @@ export default function DetailPage() {
         </div>
       )}
 
-      <div className="grid gap-8 px-6 py-8 md:grid-cols-2">
-        <div className="flex h-72 items-center justify-center overflow-hidden rounded-xl bg-brand-soft">
-          {item.image ? (
-            <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
-          ) : (
-            <ImageIcon size={52} className="text-brand opacity-40" />
-          )}
-        </div>
+      <Container className="grid gap-8 py-8 md:grid-cols-2">
+        <ItemImage
+          src={item.image}
+          alt={item.name}
+          aspect="aspect-[4/3]"
+          placeholderIcon={<ImageIcon size={52} className="text-brand opacity-40" />}
+          className="rounded-xl"
+        />
 
         <div>
           <span className="rounded-full bg-brand-soft px-2.5 py-1 text-xs text-brand">
@@ -245,6 +258,51 @@ export default function DetailPage() {
             </div>
           </div>
 
+          {visibleProofs.length > 0 && (
+            <div className="mt-6">
+              <p className="text-xs text-subtle">이 물품의 후원 인증</p>
+              <div className="scrollbar-hide mt-2 flex gap-3 overflow-x-auto pb-1">
+                {visibleProofs.map((proof) => {
+                  const proofOrg = getOrganizationById(proof.orgId);
+                  return (
+                    <button
+                      key={proof.id}
+                      onClick={() => setSelectedProof(proof)}
+                      className="flex w-48 shrink-0 flex-col overflow-hidden rounded-lg border border-hairline bg-white text-left transition hover:border-brand"
+                    >
+                      <div className="flex h-28 items-center justify-center overflow-hidden bg-gray-100">
+                        {proof.imageUrl ? (
+                          <img
+                            src={proof.imageUrl}
+                            alt={item.name}
+                            loading="lazy"
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <Camera size={20} className="text-subtle" />
+                        )}
+                      </div>
+                      <div className="p-3">
+                        <p className="truncate text-xs text-ink">{proofOrg.name}</p>
+                        <p className="mt-0.5 text-[11px] text-subtle">{proof.qty}개 · {proof.date}</p>
+                        <p className="mt-1.5 line-clamp-2 text-xs text-subtle">{proof.message}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+
+                {itemProofs.length > 3 && (
+                  <Link
+                    to="/feed"
+                    className="flex w-24 shrink-0 flex-col items-center justify-center gap-1 rounded-lg border border-hairline bg-white text-xs text-brand"
+                  >
+                    더 보기 <ArrowRight size={14} />
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
+
           <label className="mt-6 flex items-center gap-2 text-sm text-ink">
             <input
               type="checkbox"
@@ -285,7 +343,9 @@ export default function DetailPage() {
             결제 후 {picked?.org.name ?? '기관'}이 수락하면 배송이 시작됩니다
           </p>
         </div>
-      </div>
+      </Container>
+
+      <ProofModal proof={selectedProof} onClose={() => setSelectedProof(null)} />
     </div>
   );
 }

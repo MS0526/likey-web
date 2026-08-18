@@ -13,6 +13,7 @@ import DetailPage from './pages/DetailPage';
 import CartPage from './pages/CartPage';
 import FeedPage from './pages/FeedPage';
 import OrgPage from './pages/OrgPage';
+import OrgDetailPage from './pages/OrgDetailPage';
 
 function App() {
   return (
@@ -50,6 +51,14 @@ function App() {
                 }
               />
               <Route path="/feed" element={<FeedPage />} />
+              <Route
+                path="/orgs/:orgId"
+                element={
+                  <ProtectedRoute allow={['user', 'guest']}>
+                    <OrgDetailPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/org"
                 element={

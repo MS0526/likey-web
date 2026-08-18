@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Camera, Gift } from 'lucide-react';
 import Header from '../components/Header';
+import Container from '../components/Container';
 import MetricCard from '../components/MetricCard';
 import CategoryBarChart from '../components/CategoryBarChart';
+import ProofModal from '../components/ProofModal';
 import { organizations, getOrganizationById } from '../data/organizations';
 import { items, getItemById } from '../data/items';
 import { useDonation } from '../contexts/DonationContext';
@@ -15,6 +17,7 @@ const MY_DONOR_LABEL = '나 (테스트 후원자)';
 
 export default function FeedPage() {
   const [query, setQuery] = useState('');
+  const [selectedProof, setSelectedProof] = useState(null);
   const { donations, getPublishedProofs, totalAmount } = useDonation();
   const proofs = getPublishedProofs();
 
@@ -27,7 +30,7 @@ export default function FeedPage() {
     <div className="min-h-screen bg-cream">
       <Header query={query} onQueryChange={setQuery} orgCount={organizations.length} />
 
-      <div className="px-6 pt-10">
+      <Container className="pt-10">
         <div className="mx-auto max-w-5xl">
           <h2 className="text-lg text-ink">내 후원 활동</h2>
           <p className="mt-1.5 text-sm text-subtle">지금까지 내가 후원한 내역을 모아봤어요.</p>
@@ -55,9 +58,9 @@ export default function FeedPage() {
             </div>
           )}
         </div>
-      </div>
+      </Container>
 
-      <div className="mt-6 border-t border-hairline px-6 py-10">
+      <Container className="mt-6 border-t border-hairline py-10">
         <h1 className="text-center text-2xl text-ink">후원 인증</h1>
 
         {proofs.length === 0 ? (
@@ -73,7 +76,11 @@ export default function FeedPage() {
               const donorLabel = proof.anonymous ? '익명의 후원자' : proof.donor;
 
               return (
-                <div key={proof.id} className="overflow-hidden rounded-xl border border-hairline bg-white">
+                <button
+                  key={proof.id}
+                  onClick={() => setSelectedProof(proof)}
+                  className="overflow-hidden rounded-xl border border-hairline bg-white text-left transition hover:border-brand"
+                >
                   <div className="flex h-40 items-center justify-center bg-brand-soft">
                     {proof.imageUrl ? (
                       <img
@@ -92,12 +99,14 @@ export default function FeedPage() {
                     <p className="mt-2 text-sm leading-relaxed text-ink">{proof.message}</p>
                     <p className="mt-3 text-xs text-subtle">{donorLabel} · {proof.date}</p>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
         )}
-      </div>
+      </Container>
+
+      <ProofModal proof={selectedProof} onClose={() => setSelectedProof(null)} />
     </div>
   );
 }

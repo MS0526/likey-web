@@ -1,23 +1,43 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ShoppingCart, Trash2, Check } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Trash2, Check, Info } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useDonation } from '../contexts/DonationContext';
+import Container from '../components/Container';
 import { getItemById } from '../data/items';
 import { getOrganizationById } from '../data/organizations';
 import { formatWon } from '../utils/urgency';
 
 export default function CartPage() {
   const navigate = useNavigate();
-  const { cartItems, removeFromCart, setQty, clearCart } = useCart();
+  const { cartItems, removeFromCart, setQty, clearCart, remainFor } = useCart();
   const { createDonation } = useDonation();
   const [done, setDone] = useState(false);
   const [revealDonor, setRevealDonor] = useState(true);
+  const [adjusted, setAdjusted] = useState(false);
+
+  // 장바구니 진입 시, 담아둔 사이 다른 후원으로 남은 수량이 줄어든 항목을 상한까지 낮춘다
+  // (완전히 소진된 항목은 담을 수 없으므로 제거한다).
+  useEffect(() => {
+    let changed = false;
+    cartItems.forEach((c) => {
+      const remain = remainFor(c.itemId, c.orgId);
+      if (remain <= 0) {
+        changed = true;
+        removeFromCart(c.id);
+      } else if (c.qty > remain) {
+        changed = true;
+        setQty(c.id, remain);
+      }
+    });
+    if (changed) setAdjusted(true);
+  }, []);
 
   const rows = cartItems.map((c) => ({
     ...c,
     item: getItemById(c.itemId),
     org: getOrganizationById(c.orgId),
+    remain: remainFor(c.itemId, c.orgId),
   }));
 
   const total = rows.reduce((s, r) => s + r.item.price * r.qty, 0);
@@ -28,7 +48,7 @@ export default function CartPage() {
       createDonation({
         itemId: r.itemId,
         orgId: r.orgId,
-        qty: r.qty,
+        qty: Math.min(r.qty, r.remain),
         donor: '나 (테스트 후원자)',
         anonymous: !revealDonor,
       })
@@ -40,9 +60,11 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-cream">
-      <header className="flex items-center gap-4 bg-white px-6 py-3">
-        <Link to="/market" className="text-subtle"><ArrowLeft size={18} /></Link>
-        <span className="text-sm text-ink">장바구니</span>
+      <header className="bg-white">
+        <Container className="flex items-center gap-4 py-3">
+          <Link to="/market" className="text-subtle"><ArrowLeft size={18} /></Link>
+          <span className="text-sm text-ink">장바구니</span>
+        </Container>
       </header>
 
       {done && (
@@ -52,7 +74,15 @@ export default function CartPage() {
         </div>
       )}
 
-      <div className="mx-auto max-w-2xl px-6 py-8">
+      {adjusted && (
+        <div className="flex items-center justify-center gap-2 bg-accent-soft px-4 py-2.5 text-sm text-accent-ink">
+          <Info size={14} />
+          일부 물품의 수량이 조정되었어요
+        </div>
+      )}
+
+      <Container className="py-8">
+        <div className="mx-auto max-w-2xl">
         {rows.length === 0 ? (
           <div className="rounded-xl border border-hairline bg-white py-20 text-center">
             <ShoppingCart size={28} className="mx-auto text-subtle" />
@@ -64,44 +94,55 @@ export default function CartPage() {
         ) : (
           <>
             <div className="flex flex-col gap-3">
-              {rows.map((r) => (
-                <div
-                  key={r.id}
-                  className="flex items-center gap-4 rounded-xl border border-hairline bg-white p-4"
-                >
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand">
-                    <ShoppingCart size={18} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm text-ink">{r.item.name}</p>
-                    <p className="mt-1 text-xs text-subtle">{r.org.name}</p>
-                    <p className="mt-1 font-mono text-sm text-brand">
-                      {formatWon(r.item.price * r.qty)}원
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setQty(r.id, r.qty - 1)}
-                      className="h-8 w-8 rounded-lg border border-hairline text-ink"
-                    >
-                      −
-                    </button>
-                    <span className="w-5 text-center font-mono text-sm text-ink">{r.qty}</span>
-                    <button
-                      onClick={() => setQty(r.id, r.qty + 1)}
-                      className="h-8 w-8 rounded-lg border border-hairline text-ink"
-                    >
-                      +
-                    </button>
-                  </div>
-                  <button
-                    onClick={() => removeFromCart(r.id)}
-                    className="text-subtle hover:text-alert"
+              {rows.map((r) => {
+                const atCap = r.qty >= r.remain;
+                return (
+                  <div
+                    key={r.id}
+                    className="rounded-xl border border-hairline bg-white p-4"
                   >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              ))}
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand">
+                        <ShoppingCart size={18} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm text-ink">{r.item.name}</p>
+                        <p className="mt-1 text-xs text-subtle">{r.org.name}</p>
+                        <p className="mt-1 font-mono text-sm text-brand">
+                          {formatWon(r.item.price * r.qty)}원
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setQty(r.id, r.qty - 1)}
+                          className="h-8 w-8 rounded-lg border border-hairline text-ink"
+                        >
+                          −
+                        </button>
+                        <span className="w-5 text-center font-mono text-sm text-ink">{r.qty}</span>
+                        <button
+                          onClick={() => setQty(r.id, r.qty + 1)}
+                          disabled={atCap}
+                          className="h-8 w-8 rounded-lg border border-hairline text-ink disabled:opacity-40"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => removeFromCart(r.id)}
+                        className="text-subtle hover:text-alert"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                    {atCap && (
+                      <p className="mt-2 text-[11px] text-subtle">
+                        이 기관이 필요한 수량을 모두 채웠어요
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             <div className="mt-6 flex items-center justify-between rounded-xl border border-hairline bg-white p-4">
@@ -131,7 +172,8 @@ export default function CartPage() {
             </button>
           </>
         )}
-      </div>
+        </div>
+      </Container>
     </div>
   );
 }

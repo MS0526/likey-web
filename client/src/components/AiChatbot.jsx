@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Send, Sparkles } from 'lucide-react';
+import { X, Send, Sparkles, ChevronDown } from 'lucide-react';
 import { useDonation } from '../contexts/DonationContext';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchRecommendation } from '../utils/recommend';
@@ -163,9 +163,9 @@ export default function AiChatbot() {
 
   if (!open) {
     return (
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+      <div className="fixed inset-x-0 bottom-6 z-50 flex flex-col items-center gap-3 px-4">
         {showEntryHint && (
-          <div className="relative max-w-[220px] rounded-2xl bg-ink px-4 py-3 text-xs leading-relaxed text-white shadow-lg">
+          <div className="relative max-w-[280px] rounded-2xl bg-ink px-4 py-3 text-xs leading-relaxed text-white shadow-lg">
             <button
               onClick={() => setShowEntryHint(false)}
               className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white text-ink shadow"
@@ -178,33 +178,34 @@ export default function AiChatbot() {
         )}
         <button
           onClick={handleOpen}
-          className="chatbot-pulse flex items-center gap-2 rounded-full bg-brand px-5 py-3.5 text-sm text-white shadow-lg transition hover:scale-105"
+          className="chatbot-pulse flex h-14 w-full max-w-md items-center gap-3 rounded-full bg-white px-5 shadow-lg transition hover:scale-[1.01]"
           aria-label="후원도우미 AI 열기"
         >
-          <Sparkles size={18} className="text-accent" />
-          후원도우미 AI
+          <Sparkles size={20} className="shrink-0 text-brand" />
+          <span className="truncate text-sm text-ink">후원도우미 AI · 무엇이든 물어보세요</span>
         </button>
       </div>
     );
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex h-[520px] w-[360px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-hairline bg-white shadow-2xl">
-      <div className="flex items-center justify-between bg-brand px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Sparkles size={16} className="text-accent" />
-          <span className="text-sm text-white">후원도우미</span>
+    <div className="fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
+      <div className="flex max-h-[70vh] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-hairline bg-white shadow-2xl sm:max-w-lg">
+        <div className="flex items-center justify-between bg-brand px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Sparkles size={16} className="text-accent" />
+            <span className="text-sm text-white">후원도우미</span>
+          </div>
+          <button
+            onClick={() => setOpen(false)}
+            className="text-white/70 transition hover:text-white"
+            aria-label="접기"
+          >
+            <ChevronDown size={20} />
+          </button>
         </div>
-        <button
-          onClick={() => setOpen(false)}
-          className="text-white/70 transition hover:text-white"
-          aria-label="닫기"
-        >
-          <X size={18} />
-        </button>
-      </div>
 
-      <div className="flex-1 space-y-3 overflow-y-auto bg-cream p-4">
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-cream p-4">
         {messages.map((m, i) =>
           m.type === 'user' ? (
             <div key={i} className="flex justify-end">
@@ -321,6 +322,7 @@ export default function AiChatbot() {
             <Send size={15} />
           </button>
         </div>
+      </div>
       </div>
     </div>
   );

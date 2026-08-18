@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Package, CheckCircle2, BarChart3, Camera, TrendingUp, Plus, X } from 'lucide-react';
 import OrgHeader from '../components/OrgHeader';
+import Container from '../components/Container';
 import MetricCard from '../components/MetricCard';
 import TabNav from '../components/TabNav';
 import RequestRow from '../components/RequestRow';
@@ -100,7 +101,7 @@ export default function OrgPage() {
     <div className="min-h-screen bg-cream">
       <OrgHeader organization={org} />
 
-      <div className="px-8 py-8">
+      <Container className="py-8">
         <h1 className="text-2xl text-ink">기관 대시보드</h1>
         <p className="mt-1.5 text-sm text-subtle">{org.name} · 아동 {org.children}명</p>
 
@@ -242,7 +243,7 @@ export default function OrgPage() {
             )}
           </section>
         )}
-      </div>
+      </Container>
 
       {showRequestModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 px-4">

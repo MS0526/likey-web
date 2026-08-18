@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
+import Container from '../components/Container';
 
 const isSafeNext = (path) => typeof path === 'string' && path.startsWith('/') && !path.startsWith('//');
 
@@ -66,7 +67,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="mx-auto max-w-md p-8">
+    <Container className="py-8">
+      <div className="mx-auto max-w-md">
       <h1 className="text-2xl text-ink">{isOrg ? '기관 회원 로그인' : '개인 회원 로그인'}</h1>
 
       <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
@@ -135,6 +137,7 @@ export default function LoginPage() {
           </button>
         </div>
       )}
-    </div>
+      </div>
+    </Container>
   );
 }

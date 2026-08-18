@@ -1,15 +1,20 @@
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { donations as seedDonations } from '../data/donations';
 import { requests as seedRequests } from '../data/requests';
 import { proofs as seedProofs } from '../data/proofs';
 import { getItemById } from '../data/items';
+import { loadState, saveState } from '../lib/storage';
 
 const DonationContext = createContext(null);
 
 export function DonationProvider({ children }) {
-  const [donations, setDonations] = useState(seedDonations);
-  const [requests, setRequests] = useState(seedRequests);
-  const [proofs, setProofs] = useState(seedProofs);
+  const [donations, setDonations] = useState(() => loadState('nanumcart:donations', seedDonations));
+  const [requests, setRequests] = useState(() => loadState('nanumcart:requests', seedRequests));
+  const [proofs, setProofs] = useState(() => loadState('nanumcart:proofs', seedProofs));
+
+  useEffect(() => saveState('nanumcart:donations', donations), [donations]);
+  useEffect(() => saveState('nanumcart:requests', requests), [requests]);
+  useEffect(() => saveState('nanumcart:proofs', proofs), [proofs]);
 
   // 요청(orgId+itemId)별로 아직 기관이 수락하지 않은 pending 후원 수량 합계.
   // receivedQty(달성률)는 건드리지 않고, 화면에 "수락 대기 N개"로 별도 노출하는 데만 쓴다.
