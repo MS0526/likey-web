@@ -48,7 +48,7 @@ export default function HomePage() {
         <Container className="flex items-center justify-between py-5">
           <div className="flex items-center gap-2">
             <Heart size={20} className="fill-accent text-accent" />
-            <span className="text-base text-cream">라이키</span>
+            <span className="whitespace-nowrap text-base text-cream">나눔카트</span>
           </div>
           <a href="#available-now" className="flex items-center gap-1 text-sm text-subtle">
             서비스 소개 <ArrowDown size={14} />

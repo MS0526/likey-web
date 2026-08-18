@@ -37,7 +37,7 @@ app.use(express.json());
 
 // 3. 백엔드 루트 경로
 app.get('/', (req: Request, res: Response) => {
-  res.send('🚀 LIKEY 백엔드 API 서버가 정상적으로 실행 중입니다!');
+  res.send('🚀 나눔카트 백엔드 API 서버가 정상적으로 실행 중입니다!');
 });
 
 // 4. 프론트엔드 통신 테스트용 API 엔드포인트

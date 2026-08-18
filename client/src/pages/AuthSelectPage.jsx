@@ -44,7 +44,7 @@ export default function AuthSelectPage() {
           </Link>
           <div className="flex items-center gap-2">
             <Heart size={18} className="fill-brand text-brand" />
-            <span className="text-sm text-ink">라이키</span>
+            <span className="whitespace-nowrap text-sm text-ink">나눔카트</span>
           </div>
           <div className="w-16" />
         </Container>

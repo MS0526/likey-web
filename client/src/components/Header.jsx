@@ -20,7 +20,7 @@ export default function Header({ query, onQueryChange, orgCount }) {
 
         <Link to="/" className="flex shrink-0 items-center gap-2">
           <Heart size={18} className="fill-brand text-brand" />
-          <span className="text-sm text-ink">라이키</span>
+          <span className="whitespace-nowrap text-sm text-ink">나눔카트</span>
         </Link>
 
         <div className="mx-auto flex w-full max-w-xl items-center gap-2 rounded-full bg-cream px-4 py-2">

@@ -22,7 +22,7 @@ export default function AvailableNow() {
       <Container>
         <h2 className="text-center text-2xl text-ink">이미 이용할 수 있어요</h2>
         <p className="mt-3 text-center text-sm text-subtle">
-          라이키에서 지금 바로 경험할 수 있는 기능들이에요
+          나눔카트에서 지금 바로 경험할 수 있는 기능들이에요
         </p>
 
         <div className="mx-auto mt-10 grid max-w-4xl gap-4 md:grid-cols-3">
