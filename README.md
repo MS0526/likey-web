@@ -4,8 +4,8 @@
 
 ### 🔗 배포 링크
 - **웹사이트**: https://likey-web.vercel.app
-- **백엔드 API**: https://likey-web.onrender.com  
-  *(Render 무료 티어라 15분 이상 미사용 시 슬립 상태가 되며, 슬립 이후 첫 요청은 30~60초 정도 걸릴 수 있습니다.)*
+- **백엔드 API**: http://1.201.117.56:5000  
+  *(가비아 클라우드 서버에서 직접 운영 중입니다. 도메인·HTTPS는 아직 미적용 상태입니다.)*
 
 ### 🔑 데모 로그인 계정
 회원가입 없이 아래 계정으로 바로 체험해보실 수 있습니다.
@@ -43,7 +43,7 @@
 - **Language / Dev Tools:** TypeScript, `tsx`, `nodemon` *(안정적인 코드 작성 및 개발 서버 자동 재시작 도구)*
 - **AI:** OpenAI SDK (`gpt-4o-mini`) *(예산·질문에 맞는 후원 물품을 추천하는 `/api/ai/recommend` API에 사용)*
 - **기타:** `cors`, `dotenv`
-- **배포:** Render (무료 티어 — 15분 미사용 시 슬립, 첫 요청 시 30~60초 지연될 수 있음)
+- **배포:** 가비아 클라우드 (Rocky Linux, PM2로 상시 실행)
 
 ---
 
