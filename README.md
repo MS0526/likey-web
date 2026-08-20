@@ -26,7 +26,7 @@
 | | |
 |---|---|
 | **웹사이트** | https://likey-web.vercel.app |
-| **백엔드 API** | http://1.201.117.56:5000 *(가비아 클라우드, 도메인·HTTPS 미적용)* |
+| **백엔드 API** | https://traditional-compiler-minute-societies.trycloudflare.com *(가비아 클라우드 + Cloudflare Tunnel)* |
 | **이전 백엔드** | https://likey-web.onrender.com *(Render — 가비아로 이전 완료, 기록용 유지)* |
 
 **데모 로그인** — 회원가입 없이 바로 체험할 수 있습니다.
@@ -291,7 +291,7 @@ npm run dev   # http://localhost:5000
 | | 서비스 | 방식 |
 |---|---|---|
 | 프론트엔드 | **Vercel** | GitHub 연동, `main` 브랜치 push 시 자동 배포 |
-| 백엔드 | **가비아 클라우드** | Rocky Linux VM(2vCore/4GB) — `git pull` → `npm run build` → PM2로 상시 실행. 도메인·nginx·HTTPS는 아직 미적용, IP:포트로 직접 서비스 중 |
+| 백엔드 | **가비아 클라우드** | Rocky Linux VM(2vCore/4GB) — `git pull` → `npm run build` → PM2로 상시 실행. 도메인 없이 **Cloudflare Tunnel**(`cloudflared`, PM2 상주)로 HTTPS 제공 |
 | ~~백엔드(이전)~~ | ~~Render~~ | 무료 티어 콜드 스타트 이슈로 가비아 클라우드로 이전 완료 |
 
 백엔드 코드가 바뀌면 서버에 SSH로 접속해 아래를 반복합니다:
@@ -327,6 +327,13 @@ pm2 restart nanumcart-api
 
 Vercel Hobby(무료) 플랜은 프로젝트가 **개인 계정에 종속**돼서, 그 계정 소유자가 아니면 대시보드나 환경변수(`VITE_API_URL` 등)에 접근할 수 없습니다. 백엔드를 이전할 때마다 프론트 담당 팀원에게 직접 값 변경을 요청해야 했습니다. 팀 단위로 여러 명이 같이 관리하려면 Vercel Pro(유료) 팀 플랜이 필요합니다 — 이번 프로젝트에서는 팀원에게 요청하는 방식으로 우회했습니다.
 
+### 4. Mixed Content — HTTPS 프론트에서 HTTP 백엔드 호출 차단
+
+가비아 클라우드로 이전한 직후엔 도메인 없이 `http://IP:5000`으로만 서비스했는데, Vercel(HTTPS)에서 이 주소를 호출하면 브라우저가 **Mixed Content 정책**으로 요청 자체를 차단했습니다. CORS와는 무관한 문제라 서버 설정으로는 해결이 안 됩니다.
+
+- **증상**: 로컬(HTTP↔HTTP)에서는 정상 동작하는데, 배포된 프론트(HTTPS)에서만 API 호출이 조용히 실패
+- **조치**: 도메인을 구매하지 않고도 무료로 HTTPS를 받을 수 있는 **Cloudflare Tunnel**(`cloudflared`)을 백엔드 서버에 PM2로 상주시켜, `https://*.trycloudflare.com` 주소로 안전하게 우회. nginx·인증서 발급·포트 개방 없이 몇 분 만에 적용 가능했습니다.
+
 ---
 
 ## 진행 현황 & 다음 단계
@@ -335,6 +342,7 @@ Vercel Hobby(무료) 플랜은 프로젝트가 **개인 계정에 종속**돼서
 - 마켓형 물품 후원 전체 흐름(요청 등록 → 후원 → 기관 수락 → 인증 공개)
 - 개인/기관 대상 AI 추천 2종(예산 기반 챗봇, 기관용 "다음 요청 물품")
 - 백엔드를 Render → 가비아 클라우드로 이전, 상시 실행 구성
+- Cloudflare Tunnel로 백엔드 HTTPS 적용 (Mixed Content 이슈 해결)
 - 공개 저장소 전환(README 정리, 라이선스 추가)
 
 **남은 일**
