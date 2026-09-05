@@ -25,9 +25,18 @@
 
 | | |
 |---|---|
+| **시연 영상** | [YouTube에서 시연 영상 보기](https://youtu.be/xiJQRKOoCX0) |
 | **웹사이트** | https://likey-web.vercel.app |
 | **백엔드 API** | https://traditional-compiler-minute-societies.trycloudflare.com *(가비아 클라우드 + Cloudflare Tunnel)* |
 | **이전 백엔드** | https://likey-web.onrender.com *(Render — 가비아로 이전 완료, 기록용 유지)* |
+
+### 🎬 시연 영상
+
+[![나눔카트 시연 영상](https://img.youtube.com/vi/xiJQRKOoCX0/hqdefault.jpg)](https://youtu.be/xiJQRKOoCX0)
+
+> 👆 이미지 또는 링크를 클릭하시면 YouTube에서 시연 영상을 시청하실 수 있습니다.
+
+<br/>
 
 **데모 로그인** — 회원가입 없이 바로 체험할 수 있습니다.
 
